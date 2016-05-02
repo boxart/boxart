@@ -1,0 +1,50 @@
+{
+  "name": "boxart",
+  "version": "0.0.0",
+  "description": "Tools for building games in HTML.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boxart/boxart.git"
+  },
+  "keywords": [
+    "react",
+    "html",
+    "games"
+  ],
+  "author": "Michael \"Z\" Goddard <mzgoddard@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/boxart/boxart/issues"
+  },
+  "homepage": "https://github.com/boxart/boxart#readme",
+  "devDependencies": {
+    "babel": "^6.5.2",
+    "babel-core": "^6.7.7",
+    "babel-loader": "^6.2.4",
+    "babel-preset-es2015": "^6.6.0",
+    "babel-preset-react": "^6.5.0",
+    "chai": "^3.5.0",
+    "grunt": "^1.0.1",
+    "grunt-karma": "^0.12.2",
+    "karma": "^0.13.22",
+    "karma-chai": "^0.1.0",
+    "karma-chai-sinon": "^0.1.5",
+    "karma-firefox-launcher": "^0.1.7",
+    "karma-mocha": "^1.0.1",
+    "karma-webpack": "^1.7.0",
+    "mocha": "^2.4.5",
+    "react": "^15.0.2",
+    "react-addons-test-utils": "^15.0.2",
+    "react-dom": "^15.0.2",
+    "sinon": "^1.17.4",
+    "sinon-chai": "^2.8.0",
+    "webpack": "^1.13.0"
+  }
+}
