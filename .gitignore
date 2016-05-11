@@ -1,0 +1,8 @@
+logs
+*.log
+npm-debug.log*
+coverage
+.grunt
+node_modules
+.npm
+.node_repl_history
