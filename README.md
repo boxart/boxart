@@ -1,4 +1,4 @@
-# boxart
+# boxart [![Build Status](https://travis-ci.org/boxart/boxart.svg?branch=master)](https://travis-ci.org/boxart/boxart)
 
 Tools for building html games with React. Depended on by and documented at [boxart/boxart-boiler](https://github.com/boxart/boxart-boiler).
 

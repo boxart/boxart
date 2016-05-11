@@ -1,0 +1,15 @@
+language: node_js
+node_js:
+  - "node"
+  - "5"
+  - "4"
+
+before_script:
+  # Set a display port and start xvfb so firefox has an x server to render into
+  # while testing. Without this Firefox will try to launch but would fail.
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
+
+addons:
+  firefox: "latest"

@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/boxart/boxart#readme",
   "dependencies": {
+    "core-js": "^2.4.0",
     "react-addons-css-transition-group": "^15.0.2",
     "react-addons-transition-group": "^15.0.2"
   },
