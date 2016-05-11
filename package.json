@@ -11,7 +11,8 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "grunt test-dev"
+    "test": "karma start karma.conf.js --single-run",
+    "test-dev": "karma start karma.conf.js"
   },
   "repository": {
     "type": "git",
@@ -45,7 +46,6 @@
     "grunt": "^1.0.1",
     "grunt-babel": "^6.0.0",
     "grunt-contrib-clean": "^1.0.0",
-    "grunt-karma": "^0.12.2",
     "karma": "^0.13.22",
     "karma-chai": "^0.1.0",
     "karma-firefox-launcher": "^0.1.7",

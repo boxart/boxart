@@ -8,12 +8,18 @@ To work on boxart locally, you must have [Node](https://nodejs.org/) installed o
 
 To run the boxart unit test suite, use the `npm test` command; or (if [Grunt](http://gruntjs.com/) is [globally installed](http://gruntjs.com/getting-started#installing-the-cli) on your computer) run `grunt test-dev`.
 
-### Grunt Tasks
+### Development Commands
 
-#### test-dev
+**Note:** these test commands assume the [Firefox](https://www.mozilla.org/en-US/firefox/new/) web browser is installed on your development system.
 
-`grunt test-dev` boots a test server with karma to run tests as changes to the source code or tests are made.
+#### npm run test-dev
 
-#### publish
+`npm test-dev` boots a test server with Karma to automatically re-run tests in a captured Firefox browser instance whenever changes are made to the source code or tests.
+
+#### npm test
+
+`npm test` runs the test suite once in a captured Firefox browser instance and then exits.
+
+#### grunt publish
 
 `grunt publish` transpiles boxart's es2015 code to es5 and publishes boxart and its subpackages (e.g. boxart-stage) to npm.
