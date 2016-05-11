@@ -1,0 +1,23 @@
+{
+  "name": "boxart-stage",
+  "version": "0.0.0",
+  "description": "A boxart package exporting Stage elements",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boxart/boxart.git"
+  },
+  "keywords": [
+    "react",
+    "html",
+    "games"
+  ],
+  "author": "Michael \"Z\" Goddard <mzgoddard@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/boxart/boxart/issues"
+  },
+  "homepage": "https://github.com/boxart/boxart#readme",
+  "peerDependencies": {
+    "boxart": "^0.0.0"
+  }
+}

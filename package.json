@@ -2,7 +2,11 @@
   "name": "boxart",
   "version": "0.0.0",
   "description": "Tools for building games in HTML.",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "files": [
+    "src",
+    "lib"
+  ],
   "directories": {
     "test": "tests"
   },
@@ -24,6 +28,13 @@
     "url": "https://github.com/boxart/boxart/issues"
   },
   "homepage": "https://github.com/boxart/boxart#readme",
+  "dependencies": {
+    "react-addons-css-transition-group": "^15.0.2",
+    "react-addons-transition-group": "^15.0.2"
+  },
+  "peerDependencies": {
+    "react": "^15.0.2"
+  },
   "devDependencies": {
     "babel": "^6.5.2",
     "babel-core": "^6.7.7",
@@ -32,7 +43,8 @@
     "babel-preset-react": "^6.5.0",
     "chai": "^3.5.0",
     "grunt": "^1.0.1",
-    "grunt-cli": "^1.2.0",
+    "grunt-babel": "^6.0.0",
+    "grunt-contrib-clean": "^1.0.0",
     "grunt-karma": "^0.12.2",
     "karma": "^0.13.22",
     "karma-chai": "^0.1.0",
