@@ -1,9 +1,17 @@
+import Animated from './animated';
+import AnimatedAgent from './animated-agent';
+import AnimatedRect from './animated-rect';
+import Stage from './stage';
+import CSSStage from './css-stage';
+import LinearStage from './linear-stage';
+import LinearCSSStage from './linear-css-stage';
+
 module.exports = {
-  Animated: require('./animated'),
-  AnimatedAgent: require('./animated-agent'),
-  AnimatedRect: require('./animated-rect'),
-  Stage: require('./stage'),
-  CSSStage: require('./css-stage'),
-  LinearStage: require('./linear-stage'),
-  LinearCSSStage: require('./linear-css-stage'),
+  Animated,
+  AnimatedAgent,
+  AnimatedRect,
+  Stage,
+  CSSStage,
+  LinearStage,
+  LinearCSSStage,
 };
