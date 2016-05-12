@@ -181,7 +181,7 @@ export default class AnimatedAgent extends Component {
     const style = {
       zIndex: 1,
     };
-    rect.transformStyle(rect, style);
+    rect.transformStyle(lastRect, style);
     this.setReplaceStyle(animated, animatedEl, style);
     // A temporary storage value that can be reused to reduce memory churn
     // and very easily track the position in the animation in case its
@@ -198,7 +198,7 @@ export default class AnimatedAgent extends Component {
       const t = Math.min((now - start) / 1000 / duration, 1);
       // Create a transform that is the difference from the position in the
       // animation to the origin of the element.
-      rect.interpolate(lastRect, t, tRect).transformStyle(rect, style);
+      rect.transformStyle(lastRect.interpolate(rect, t, tRect), style);
       this.setAnimatedStyle(animated, animatedEl, style);
       // Return a position in time, timer.loop will resolve the promise it
       // create when t is greater than or equal to 1.
