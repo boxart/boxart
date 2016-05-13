@@ -20,6 +20,14 @@ To run the boxart unit test suite, use the `npm test` command; or (if [Grunt](ht
 
 `npm test` runs the test suite once in a captured Firefox browser instance and then exits.
 
+#### grunt babel
+
+`grunt babel` will run [babel](https://babeljs.io/) to create a `lib` directory of ES5 code compiled from this repository's ES2016 `src` directory.
+
+#### grunt watch
+
+`grunt watch` (or `grunt watch:babel`) will automatically re-run `grunt babel` whenever files in `src` change; this is useful if you have used [`npm link`](https://docs.npmjs.com/cli/link) to include a local copy of `boxart` in your application for development purposes.
+
 #### grunt publish
 
 `grunt publish` transpiles boxart's es2015 code to es5 and publishes boxart and its subpackages (e.g. boxart-stage) to npm.

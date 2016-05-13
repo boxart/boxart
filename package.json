@@ -47,6 +47,7 @@
     "grunt": "^1.0.1",
     "grunt-babel": "^6.0.0",
     "grunt-contrib-clean": "^1.0.0",
+    "grunt-contrib-watch": "^1.0.0",
     "karma": "^0.13.22",
     "karma-chai": "^0.1.0",
     "karma-firefox-launcher": "^0.1.7",

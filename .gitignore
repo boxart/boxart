@@ -6,3 +6,6 @@ coverage
 node_modules
 .npm
 .node_repl_history
+
+# Generated ES5 code
+lib
