@@ -264,9 +264,13 @@ export default class AnimatedAgent extends Component {
       // the same key it'll need to restart the animation. The animation is left
       // so any such new component will "cancel" it again giving it the rect to
       // continue with.
-      if (this.animations[key] && this.animations[key].cancel) {
-        this.animations[key].cancel();
-      }
+      const animation = this.animations[key];
+      this.soon()
+      .then(() => {
+        if (animation === this.animations[key] && animation.cancel) {
+          animation.cancel();
+        }
+      });
     }
   }
 
