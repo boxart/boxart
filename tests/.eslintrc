@@ -1,0 +1,20 @@
+{
+  "extends": [
+    "../eslint/eslint-defaults.json",
+    "../eslint/eslint-jsx.json"
+  ],
+  "env": {
+    "browser": true,
+    "mocha": true
+  },
+  "globals": {
+    "expect": false,
+    "sinon": false
+  },
+  "rules": {
+    // expect assertions are commonly unused
+    "no-unused-expressions": 0,
+    // Don't need to write prop validations in unit tests
+    "react/prop-types": 0
+  }
+}
