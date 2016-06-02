@@ -1,4 +1,6 @@
-class SceneItem extends Component {
+import React, {Component} from 'react';
+
+export default class StageItem extends Component {
   componentWillAppear(callback) {
     return this.props.willAppear && this.props.willAppear(callback);
   }
@@ -23,3 +25,12 @@ class SceneItem extends Component {
     return this.props.didLeave && this.props.didLeave();
   }
 }
+
+StageItem.propTypes = {
+  willAppear: React.PropTypes.func,
+  didAppear: React.PropTypes.func,
+  willEnter: React.PropTypes.func,
+  didEnter: React.PropTypes.func,
+  willLeave: React.PropTypes.func,
+  didLeave: React.PropTypes.func,
+};

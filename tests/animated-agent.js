@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React from 'react';
 import {render, unmountComponentAtNode} from 'react-dom';
 
 import AnimatedAgent from '../src/animated-agent';
@@ -27,11 +27,11 @@ describe('AnimatedAgent', function() {
   });
 
   it('starts animation when Animated did mount', function() {
-    let agent = render(<AnimatedAgent><div></div></AnimatedAgent>, root);
-    let spy = sinon.spy();
+    render(<AnimatedAgent><div></div></AnimatedAgent>, root);
+    const spy = sinon.spy();
     return new Promise(requestAnimationFrame)
     .then(() => {
-      agent = render(<AnimatedAgent><div>
+      render(<AnimatedAgent><div>
         <Animated key="key" animateKey="key" animate={spy}>
           <div></div>
         </Animated>
@@ -41,14 +41,14 @@ describe('AnimatedAgent', function() {
     .then(() => {
       expect(spy).to.be.called;
     });
-  })
-   
+  });
+
   it('starts animation when Animated did update', function() {
-    let agent = render(<AnimatedAgent><div></div></AnimatedAgent>, root);
-    let spy = sinon.spy();
+    render(<AnimatedAgent><div></div></AnimatedAgent>, root);
+    const spy = sinon.spy();
     return new Promise(requestAnimationFrame)
     .then(() => {
-      agent = render(<AnimatedAgent><div>
+      render(<AnimatedAgent><div>
         <Animated key="key" animateKey="key" animate={spy}>
           <div></div>
         </Animated>
@@ -56,7 +56,7 @@ describe('AnimatedAgent', function() {
       return new Promise(requestAnimationFrame);
     })
     .then(() => {
-      agent = render(<AnimatedAgent><div>
+      render(<AnimatedAgent><div>
         <Animated key="key" animateKey="key" animate={spy}>
           <div></div>
         </Animated>
@@ -75,11 +75,11 @@ describe('AnimatedAgent', function() {
       }
     }
 
-    let dontSpy = sinon.spy();
-    let doSpy = sinon.spy();
-    let agent = render(<AnimatedAgent><div>
+    const dontSpy = sinon.spy();
+    const doSpy = sinon.spy();
+    render(<AnimatedAgent><div>
       <AnimatedTest
-        key="key" animateKey="key" 
+        key="key" animateKey="key"
         animate={dontSpy} animateTest={doSpy}>
         <div></div>
       </AnimatedTest>
@@ -92,22 +92,22 @@ describe('AnimatedAgent', function() {
   });
 
   it('cancels animation when Animated did update', function() {
-    let spy = sinon.spy();
-    let stub = sinon.stub();
+    const spy = sinon.spy();
+    const stub = sinon.stub();
     stub.returns({cancel: spy});
-    let agent = render(<AnimatedAgent><div>
+    render(<AnimatedAgent><div>
       <Animated key="key" animateKey="key" animate={stub}>
         <div></div>
       </Animated>
     </div></AnimatedAgent>, root);
     return new Promise(requestAnimationFrame)
     .then(() => {
-      let agent = render(<AnimatedAgent><div>
+      render(<AnimatedAgent><div>
         <Animated key="key" animateKey="key" animate={() => {}}>
           <div></div>
         </Animated>
       </div></AnimatedAgent>, root);
-      return new Promise(requestAnimationFrame)
+      return new Promise(requestAnimationFrame);
     })
     .then(() => {
       expect(spy).to.be.called;
@@ -115,20 +115,20 @@ describe('AnimatedAgent', function() {
   });
 
   it('restarts animation when Animated did update', function() {
-    let spy = sinon.spy();
-    let agent = render(<AnimatedAgent><div>
+    const spy = sinon.spy();
+    render(<AnimatedAgent><div>
       <Animated key="key" animateKey="key" animate={() => {}}>
         <div></div>
       </Animated>
     </div></AnimatedAgent>, root);
     return new Promise(requestAnimationFrame)
     .then(() => {
-      let agent = render(<AnimatedAgent><div>
+      render(<AnimatedAgent><div>
         <Animated key="key" animateKey="key" animate={spy}>
           <div></div>
         </Animated>
       </div></AnimatedAgent>, root);
-      return new Promise(requestAnimationFrame)
+      return new Promise(requestAnimationFrame);
     })
     .then(() => {
       expect(spy).to.be.called;
@@ -136,8 +136,7 @@ describe('AnimatedAgent', function() {
   });
 
   it('removes style when Animated will update', function() {
-    let spy = sinon.spy();
-    let agent = render(<AnimatedAgent><div>
+    render(<AnimatedAgent><div>
       <Animated key="key" animateKey="key" animate={options => {
         options.replaceStyle({transform: 'translate(10px, 0)'});
       }}>
@@ -146,12 +145,12 @@ describe('AnimatedAgent', function() {
     </div></AnimatedAgent>, root);
     return new Promise(requestAnimationFrame)
     .then(() => {
-      let agent = render(<AnimatedAgent><div>
+      render(<AnimatedAgent><div>
         <Animated key="key" animateKey="key" animate={() => {}}>
           <div className="animated-test"></div>
         </Animated>
       </div></AnimatedAgent>, root);
-      return new Promise(requestAnimationFrame)
+      return new Promise(requestAnimationFrame);
     })
     .then(() => {
       expect(document.querySelector('.animated-test').style.transform)
@@ -161,7 +160,7 @@ describe('AnimatedAgent', function() {
 
   it('reuses animation timers', function() {
     let timerA, timerB;
-    let agent = render(<AnimatedAgent><div>
+    render(<AnimatedAgent><div>
       <Animated key="key" animateKey="key" animate={options => {
         timerA = options.timer();
         return timerA;
@@ -173,7 +172,7 @@ describe('AnimatedAgent', function() {
     .then(() => timerA)
     .then(() => new Promise(requestAnimationFrame))
     .then(() => {
-      let agent = render(<AnimatedAgent><div>
+      render(<AnimatedAgent><div>
         <Animated key="key" animateKey="key" animate={options => {
           timerB = options.timer();
           return timerB;
@@ -190,7 +189,7 @@ describe('AnimatedAgent', function() {
 
   it('reuses animation callback options', function() {
     let optionsA, optionsB;
-    let agent = render(<AnimatedAgent><div>
+    render(<AnimatedAgent><div>
       <Animated key="key" animateKey="key" animate={options => {
         optionsA = options;
         return Promise.resolve();
@@ -201,7 +200,7 @@ describe('AnimatedAgent', function() {
     return new Promise(requestAnimationFrame)
     .then(() => new Promise(requestAnimationFrame))
     .then(() => {
-      let agent = render(<AnimatedAgent><div>
+      render(<AnimatedAgent><div>
         <Animated key="key" animateKey="key" animate={options => {
           optionsB = options;
           return Promise.resolve();
@@ -217,15 +216,14 @@ describe('AnimatedAgent', function() {
   });
 
   it('animateFrom transforms Animated from one position to another', function() {
-    let timerA, timerB;
-    let agent = render(<AnimatedAgent><div>
+    render(<AnimatedAgent><div>
       <Animated key="key" animateKey="key">
         <div className="animated-test" style={{position: 'absolute', left: 0}}></div>
       </Animated>
     </div></AnimatedAgent>, root);
     return new Promise(requestAnimationFrame)
     .then(() => {
-      let agent = render(<AnimatedAgent><div>
+      render(<AnimatedAgent><div>
         <Animated key="key" animateKey="key">
           <div className="animated-test" style={{position: 'absolute', left: 10}}></div>
         </Animated>
@@ -239,13 +237,12 @@ describe('AnimatedAgent', function() {
   });
 
   it('updates rectangles when agent moves', function() {
-    let timerA, timerB;
     let agent = render(<AnimatedAgent><div>
       <Animated key="key" animateKey="key">
         <div className="animated-test" style={{position: 'absolute', left: 0}}></div>
       </Animated>
     </div></AnimatedAgent>, root);
-    let rect = agent.rect.clone();
+    const rect = agent.rect.clone();
     return new Promise(requestAnimationFrame)
     .then(() => {
       agent = render(<AnimatedAgent><div style={{position: 'absolute', left: 10}}>

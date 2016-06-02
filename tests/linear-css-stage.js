@@ -1,8 +1,7 @@
 import React, {Component} from 'react';
-import {render, findDOMNode} from 'react-dom';
 import {
   renderIntoDocument,
-  findRenderedComponentWithType
+  findRenderedComponentWithType,
 } from 'react-addons-test-utils';
 
 import LinearCSSStage from '../src/linear-css-stage';

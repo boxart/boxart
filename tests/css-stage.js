@@ -1,8 +1,7 @@
 import React, {Component} from 'react';
-import {render, findDOMNode} from 'react-dom';
 import {
   renderIntoDocument,
-  findRenderedComponentWithType
+  findRenderedComponentWithType,
 } from 'react-addons-test-utils';
 
 import CSSStage from '../src/css-stage';
@@ -18,19 +17,19 @@ describe('CSSStage', function() {
       transitionName="test-stage"
       transitionEnterTimeout={300}
       transitionLeaveTimeout={300}>
-      <Child></Child>
+      <Child />
     </CSSStage>);
     const child = findRenderedComponentWithType(scene, Child);
     expect(child).to.be.ok;
   });
 
   it('renders index child passed', function() {
-    const scene = renderIntoDocument(<CSSStage index={1} 
+    const scene = renderIntoDocument(<CSSStage index={1}
       transitionName="test-stage"
       transitionEnterTimeout={300}
       transitionLeaveTimeout={300}>
-      <Child value={0} key={0}></Child>
-      <Child value={1} key={1}></Child>
+      <Child value={0} key={0} />
+      <Child value={1} key={1} />
     </CSSStage>);
     const child = findRenderedComponentWithType(scene, Child);
     expect(child.props.value).to.equal(1);

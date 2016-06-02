@@ -12,7 +12,7 @@ export default class LinearStage extends Component {
 
   componentWillReceiveProps(newProps) {
     if (this.props !== newProps) {
-      this.setState(this.handleProps(props));
+      this.setState(this.handleProps(newProps));
     }
   }
 
@@ -38,3 +38,7 @@ export default class LinearStage extends Component {
     </Stage>);
   }
 }
+
+LinearStage.propTypes = {
+  children: React.PropTypes.any,
+};

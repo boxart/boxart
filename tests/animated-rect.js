@@ -25,7 +25,6 @@ describe('AnimatedRect', function() {
 
   it('clones into a new Rectangle', function() {
     const rect = new AnimatedRect(0, 0, 128, 128, 0);
-    const clone = rect.clone();
     expectSquare(rect);
     const cloneSrc = new AnimatedRect();
     const clone2 = rect.clone(cloneSrc);
@@ -44,7 +43,6 @@ describe('AnimatedRect', function() {
   it('interpolates between Rectangles', function() {
     const a = new AnimatedRect(0, 0, 128, 128, 0);
     const b = new AnimatedRect(128, 128, 256, 256, Math.PI);
-    const rect = a.interpolate(b, 0);
     expectSquare(a);
     a.interpolate(b, 0.5, a);
     expectSquare(a, 64, 64, 192, 192, Math.PI * 0.5);
