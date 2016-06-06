@@ -13,8 +13,7 @@ describe('AnimatedTimer', function() {
     }
   }
 
-  let agent;
-  let fakeTimers;
+  let agent, fakeTimers;
 
   beforeEach(function() {
     agent = new FakeAgent();
@@ -73,11 +72,11 @@ describe('AnimatedTimer', function() {
     const promises = [
       Promise.resolve(),
       new Promise(requestAnimationFrame),
-      new Promise(resolve => setTimeout(resolve, 10))
+      new Promise(resolve => setTimeout(resolve, 10)),
     ];
     let allJoined = false;
-    const all = Promise.all(promises)
-    .then(() => {allJoined = true;})
+    Promise.all(promises)
+    .then(() => {allJoined = true;});
     promises.forEach(timer.join, timer);
     return timer
     .then(() => {
@@ -122,8 +121,8 @@ describe('AnimatedTimer', function() {
     return timer.frame()
     .then(() => {frameResolved = 1; return timer.frame();})
     .then(() => {return Promise.resolve();})
-    .then(() => {frameResolved = 2; return timer.frame()})
-    .then(() => {frameResolved = 3; return timer.frame()})
+    .then(() => {frameResolved = 2; return timer.frame();})
+    .then(() => {frameResolved = 3; return timer.frame();})
     .then(() => {throw new Error();})
     .catch(error => {
       expect(frameResolved).to.equal(2);
@@ -205,8 +204,8 @@ describe('AnimatedTimer', function() {
     return timer.timeout(10)
     .then(() => {timeoutResolved = 1; return timer.timeout(10);})
     .then(() => {return Promise.resolve();})
-    .then(() => {timeoutResolved = 2; return timer.timeout(10)})
-    .then(() => {timeoutResolved = 3; return timer.timeout(10)})
+    .then(() => {timeoutResolved = 2; return timer.timeout(10);})
+    .then(() => {timeoutResolved = 3; return timer.timeout(10);})
     .then(() => {throw new Error();})
     .catch(error => {
       expect(timeoutResolved).to.equal(2);
@@ -253,7 +252,7 @@ describe('AnimatedTimer', function() {
     const timer = agent.timer();
     let loopResolved = 0;
     let t = 0;
-    let loopfn = () => {t += 0.5; return t;};
+    const loopfn = () => {t += 0.5; return t;};
     timer.loop(loopfn)
     .then(() => {loopResolved = 1; t = 0; return timer.loop(loopfn);})
     .then(() => {loopResolved = 2; t = 0; return timer.loop(loopfn);})
@@ -267,7 +266,7 @@ describe('AnimatedTimer', function() {
   it('joins after the last loop in timer callback', function() {
     let loopResolved = 0;
     let t = 0;
-    let loopfn = () => {t += 0.5; return t;};
+    const loopfn = () => {t += 0.5; return t;};
     return agent.timer(timer => {
       return timer.loop(loopfn)
       .then(() => {loopResolved = 1; t = 0; return timer.loop(loopfn);})
@@ -283,12 +282,12 @@ describe('AnimatedTimer', function() {
     const timer = agent.timer();
     let loopResolved = 0;
     let t = 0;
-    let loopfn = () => {t += 0.5; return t;};
+    const loopfn = () => {t += 0.5; return t;};
     return timer.loop(loopfn)
     .then(() => {loopResolved = 1; return timer.loop(loopfn);})
     .then(() => {return Promise.resolve();})
-    .then(() => {loopResolved = 2; return timer.loop(loopfn)})
-    .then(() => {loopResolved = 3; return timer.loop(loopfn)})
+    .then(() => {loopResolved = 2; return timer.loop(loopfn);})
+    .then(() => {loopResolved = 3; return timer.loop(loopfn);})
     .then(() => {throw new Error();})
     .catch(error => {
       expect(loopResolved).to.equal(2);
@@ -300,7 +299,7 @@ describe('AnimatedTimer', function() {
     const timer = agent.timer();
     let loopResolved = 0;
     let t = 0;
-    let loopfn = () => {t += 0.5; return t;};
+    const loopfn = () => {t += 0.5; return t;};
     const promise = timer.loop(loopfn)
     .then(() => {loopResolved = 1; return timer.loop(loopfn);});
     promise.then(() => Promise.resolve().then(() => timer.cancel()));

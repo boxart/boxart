@@ -138,7 +138,7 @@ export default class AnimatedAgent extends Component {
     // styling the animation had previously applied.
     if (!style) {
       this.replacedStyles[animatedKey] = null;
-      return;
+      return null;
     }
     for (const key in style) {
       if (!replaced.hasOwnProperty(key)) {

@@ -65,7 +65,12 @@ import React, {Children, Component} from 'react';
  * }}><li>{item.name}</li></Animated>
  * ```
  *
- * `animate` is given an options object that holds members to build animations with. `animateFrom` and `animateFromLast` let you build simple linear animations from where the Animated was last to where it is now. `lastRect` and `rect` are those values. `rect` is a little special, while `lastRect` is a unique copy of the last state for the Animated `rect` is the current state and will be updated if for example the window resized.
+ * `animate` is given an options object that holds members to build animations
+ * with. `animateFrom` and `animateFromLast` let you build simple linear
+ * animations from where the Animated was last to where it is now. `lastRect`
+ * and `rect` are those values. `rect` is a little special, while `lastRect` is
+ * a unique copy of the last state for the Animated `rect` is the current state
+ * and will be updated if for example the window resized.
  */
 export default class Animated extends Component {
   componentDidMount() {

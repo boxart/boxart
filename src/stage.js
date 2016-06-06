@@ -2,7 +2,7 @@ import React, {Children, Component} from 'react';
 
 import TransitionGroup from 'react-addons-transition-group';
 
-export default class Scene extends Component {
+export default class Stage extends Component {
   constructor(props) {
     super(props);
 
@@ -58,3 +58,9 @@ export default class Scene extends Component {
     </TransitionGroup>);
   }
 }
+
+Stage.propTypes = {
+  childShouldLeave: React.PropTypes.func,
+  index: React.PropTypes.number,
+  children: React.PropTypes.any,
+};
