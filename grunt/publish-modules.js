@@ -63,7 +63,15 @@ module.exports = function(grunt) {
         .then(JSON.parse)
         .then(function(package) {
           package.version = version;
-          package.peerDependencies.boxart = '^' + version;
+          if (package.peerDependencies) {
+            package.peerDependencies.boxart = '^' + version;
+          }
+          if (package.dependencies) {
+            package.dependencies.boxart = '^' + version;
+            if (package.dependencies['boxart-batch']) {
+              package.dependencies['boxart-batch'] = '^' + version;
+            }
+          }
           return writeFile(subpackagePath, JSON.stringify(package, null, '  '), 'utf8');
         });
       }));
