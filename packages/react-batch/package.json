@@ -19,6 +19,6 @@
   "homepage": "https://github.com/boxart/boxart#readme",
   "dependencies": {
     "boxart": "^0.0.0",
-    "boxart-batch": "^0.0.0",
+    "boxart-batch": "^0.0.0"
   }
 }

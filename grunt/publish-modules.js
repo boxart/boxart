@@ -59,7 +59,7 @@ module.exports = function(grunt) {
       var version = values[1];
       return Promise.all(packages.map(function(packageName) {
         var subpackagePath = path.join('packages', packageName, 'package.json');
-        readFile(subpackagePath, 'utf8')
+        return readFile(subpackagePath, 'utf8')
         .then(JSON.parse)
         .then(function(package) {
           package.version = version;
