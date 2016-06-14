@@ -1,0 +1,24 @@
+{
+  "name": "react-batch",
+  "version": "0.0.0",
+  "description": "Build batches of items with boxart batch",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boxart/boxart.git"
+  },
+  "keywords": [
+    "react",
+    "html",
+    "games"
+  ],
+  "author": "Michael \"Z\" Goddard <mzgoddard@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/boxart/boxart/issues"
+  },
+  "homepage": "https://github.com/boxart/boxart#readme",
+  "dependencies": {
+    "boxart": "^0.0.0",
+    "boxart-batch": "^0.0.0",
+  }
+}
