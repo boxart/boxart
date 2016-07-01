@@ -8,6 +8,11 @@ describe('AnimatedAgent', function() {
 
   let root;
 
+  const resolveThen = () => {
+    const p = Promise.resolve();
+    return p.then.bind(p);
+  };
+
   before(function() {
     root = document.createElement('div');
     document.body.appendChild(root);
@@ -94,7 +99,7 @@ describe('AnimatedAgent', function() {
   it('cancels animation when Animated did update', function() {
     const spy = sinon.spy();
     const stub = sinon.stub();
-    stub.returns({cancel: spy});
+    stub.returns({cancel: spy, then: resolveThen()});
     render(<AnimatedAgent><div>
       <Animated key="key" animateKey="key" animate={stub}>
         <div></div>
