@@ -60,6 +60,10 @@ export default class AnimatedTimer {
       if (this.run !== run) {
         throw new Error('Timer canceled');
       }
+    })
+    .catch(error => {
+      this._reject(error);
+      throw error;
     });
   }
 
