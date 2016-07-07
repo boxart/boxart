@@ -267,7 +267,10 @@ export default class AnimatedAgent extends Component {
       const animation = this.animations[key];
       this.soon()
       .then(() => {
-        if (animation === this.animations[key] && animation.cancel) {
+        if (
+          animation === this.animations[key] &&
+          animation && animation.cancel
+        ) {
           if (animation.then) {
             animation.then(null, () => {});
           }
