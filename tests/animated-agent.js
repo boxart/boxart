@@ -9,7 +9,8 @@ describe('AnimatedAgent', function() {
   let root;
 
   const resolveThen = () => {
-    const p = Promise.resolve();
+    const p = new Promise(requestAnimationFrame)
+    .then(() => new Promise(requestAnimationFrame));
     return p.then.bind(p);
   };
 
