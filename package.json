@@ -1,6 +1,6 @@
 {
   "name": "boxart",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Tools for building games in HTML.",
   "main": "lib/index.js",
   "files": [
