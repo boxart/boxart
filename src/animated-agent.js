@@ -48,16 +48,20 @@ export default class AnimatedAgent extends Component {
     this.base.willUnmount();
   }
 
-  removeAnimatedStyle(animated, animatedEl) {
-    return this.base.removeAnimatedStyle(animated, animatedEl);
-  }
-
   setReplaceStyle(animated, animatedEl, style) {
     return this.base.setReplaceStyle(animated, animatedEl, style);
   }
 
   setAnimatedStyle(animated, animatedEl, style) {
     return this.base.setAnimatedStyle(animated, animatedEl, style);
+  }
+
+  restoreAnimatedStyle(animated, animatedEl) {
+    return this.base.restoreAnimatedStyle(animated, animatedEl);
+  }
+
+  removeAnimatedStyle(animated, animatedEl) {
+    return this.base.removeAnimatedStyle(animated, animatedEl);
   }
 
   animateFrom(animated, animatedEl, lastRect, rect, duration) {

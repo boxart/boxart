@@ -32,16 +32,21 @@ export default class AnimatedCallbackOptions {
     return this.agent.animateFrom(this.animated, this.animatedEl, lastRect, rect, duration);
   }
 
-  removeStyle() {
-    this.agent.removeAnimatedStyle(this.animated, this.animatedEl);
-  }
-
   replaceStyle(style) {
-    this.agent.setReplaceStyle(this.animated, this.animatedEl, style);
+    this.animated.replaceStyle(style);
   }
 
   setStyle(style) {
-    this.agent.setAnimatedStyle(this.animated, this.animatedEl, style);
+    this.animated.setStyle(style);
+  }
+
+  /* deprecated */
+  removeStyle() {
+    this.animated.restoreStyle();
+  }
+
+  restoreStyle() {
+    this.animated.restoreStyle();
   }
 
   timer(fn) {

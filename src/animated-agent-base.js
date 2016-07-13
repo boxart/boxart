@@ -98,57 +98,20 @@ export default class AnimatedAgentBase {
     }
   }
 
-  removeAnimatedStyle(animated, animatedEl) {
-    // Return an animated element to the style an animation replaced. This
-    // should return the element to how it was before the animation was played.
-    // This is used at times to return the element to the non animated state to
-    // query the DOM's layout. After use, the style is returned to that of the
-    // any current animation so a user never sees the change.
-    const animatedKey = animated.getAnimateKey();
-    if (!this.replacedStyles[animatedKey]) {
-      return;
-    }
-    Object.assign(animatedEl.style, this.replacedStyles[animatedKey]);
-    this.replacedStyles[animatedKey] = null;
-  }
-
   setReplaceStyle(animated, animatedEl, style) {
-    // Set the style of an animated element and store the style that was
-    // replaced. When style has new keys, record the replaced style. When style
-    // no longer has keys that have replaced values recorded, return those
-    // replaced values.
-    const animatedKey = animated.getAnimateKey();
-    if (!this.replacedStyles[animatedKey]) {
-      this.replacedStyles[animatedKey] = {};
-    }
-    const replaced = this.replacedStyles[animatedKey];
-    this.styles[animatedKey] = style;
-    for (const key in replaced) {
-      if (!style || !style.hasOwnProperty(key)) {
-        animatedEl.style[key] = replaced[key];
-        delete replaced[key];
-      }
-    }
-    // The end of an animation sets the style to a null object, removing any
-    // styling the animation had previously applied.
-    if (!style) {
-      this.replacedStyles[animatedKey] = null;
-      return null;
-    }
-    for (const key in style) {
-      if (!replaced.hasOwnProperty(key)) {
-        replaced[key] = animatedEl.style[key];
-      }
-    }
-    Object.assign(animatedEl.style, style);
-    return replaced;
+    return animated.replaceStyle(style);
   }
 
   setAnimatedStyle(animated, animatedEl, style) {
-    // Set the style of an animated element.
-    const animatedKey = animated.getAnimateKey();
-    this.styles[animatedKey] = style;
-    Object.assign(animatedEl.style, style);
+    return animated.setStyle(style);
+  }
+
+  restoreAnimatedStyle(animated, animatedEl) {
+    return animated.restoreStyle();
+  }
+
+  removeAnimatedStyle(animated, animatedEl) {
+    return animated.restoreStyle();
   }
 
   timer(fn) {
@@ -398,7 +361,7 @@ export default class AnimatedAgentBase {
       for (const key in this.animateds) {
         const animated = this.animateds[key];
         if (animated) {
-          this.removeAnimatedStyle(animated, findDOMNode(animated));
+          animated.restoreAll();
         }
       }
       // Get the new rects for all Animateds.
@@ -415,7 +378,7 @@ export default class AnimatedAgentBase {
       for (const key in this.animateds) {
         const animated = this.animateds[key];
         if (animated) {
-          this.setAnimatedStyle(animated, findDOMNode(animated), this.styles[key]);
+          animated.replaceAll();
         }
       }
     });
