@@ -1,4 +1,10 @@
 import React, {Children, Component} from 'react';
+import {findDOMNode} from 'react-dom';
+
+import AnimatedAgentBase from './animated-agent-base';
+import AnimatedRect from './animated-rect';
+
+const globalAgent = AnimatedAgentBase.globalAgent;
 
 /**
  * Animated
@@ -74,20 +80,28 @@ import React, {Children, Component} from 'react';
  */
 export default class Animated extends Component {
   componentDidMount() {
-    this.context.animationAgent.mountAnimated(this);
-    this.context.animationAgent.updateAnimated(this);
+    this.agent().mountAnimated(this);
+    this.agent().updateAnimated(this);
   }
 
   componentWillUpdate() {
-    this.context.animationAgent.willUpdateAnimated(this);
+    this.agent().willUpdateAnimated(this);
   }
 
   componentDidUpdate() {
-    this.context.animationAgent.updateAnimated(this);
+    this.agent().updateAnimated(this);
   }
 
   componentWillUnmount() {
-    this.context.animationAgent.unmountAnimated(this);
+    this.agent().unmountAnimated(this);
+  }
+
+  rect() {
+    return AnimatedRect.getBoundingClientRect(findDOMNode(this));
+  }
+
+  agent() {
+    return this.context.animationAgent || globalAgent();
   }
 
   getAnimateKey() {

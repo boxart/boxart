@@ -2,6 +2,7 @@ import React from 'react';
 import {render, unmountComponentAtNode} from 'react-dom';
 
 import AnimatedAgent from '../src/animated-agent';
+import AnimatedAgentBase from '../src/animated-agent-base';
 import Animated from '../src/animated';
 
 describe('AnimatedAgent', function() {
@@ -260,6 +261,26 @@ describe('AnimatedAgent', function() {
     })
     .then(() => {
       expect(agent.rect).to.not.eql(rect);
+    });
+  });
+
+  after(function() {
+    AnimatedAgentBase.resetGlobalAgent();
+  });
+
+  it('uses a global agent when there is no agent context', function() {
+    let animated = render(<Animated key="key" animateKey="key">
+      <div style={{position: 'absolute', left: 0}}></div>
+    </Animated>, root);
+    return new Promise(requestAnimationFrame)
+    .then(() => {
+      animated = render(<Animated key="key" animateKey="key">
+        <div style={{position: 'absolute', left: 10}}></div>
+      </Animated>, root);
+      return new Promise(requestAnimationFrame);
+    })
+    .then(() => {
+      expect(animated.rect().left).to.not.eql(10);
     });
   });
 
