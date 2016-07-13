@@ -267,7 +267,13 @@ export default class AnimatedAgent extends Component {
       const animation = this.animations[key];
       this.soon()
       .then(() => {
-        if (animation === this.animations[key] && animation.cancel) {
+        if (
+          animation === this.animations[key] &&
+          animation && animation.cancel
+        ) {
+          if (animation.then) {
+            animation.then(null, () => {});
+          }
           animation.cancel();
         }
       });
@@ -347,8 +353,12 @@ export default class AnimatedAgent extends Component {
         // stored rect or by canceling a current animation and using its
         // returned value.
         let lastRect;
-        if (this.animations[key] && this.animations[key].cancel) {
-          lastRect = this.animations[key].cancel();
+        const oldAnimation = this.animations[key];
+        if (oldAnimation && oldAnimation.cancel) {
+          if (oldAnimation.then) {
+            oldAnimation.then(function() {}, function() {});
+          }
+          lastRect = oldAnimation.cancel();
         }
         if (!lastRect) {
           lastRect = this.rects[key].clone();
