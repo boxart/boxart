@@ -4,6 +4,8 @@ import {findDOMNode} from 'react-dom';
 import AnimatedAgentBase from './animated-agent-base';
 import AnimatedRect from './animated-rect';
 
+import AnimatedStyle from './util/animated-style';
+
 const globalAgent = AnimatedAgentBase.globalAgent;
 
 /**
@@ -79,7 +81,15 @@ const globalAgent = AnimatedAgentBase.globalAgent;
  * and will be updated if for example the window resized.
  */
 export default class Animated extends Component {
+  constructor(...args) {
+    super(...args);
+    this.replacedStyle = {};
+    this.style = {};
+    this.element = null;
+  }
+
   componentDidMount() {
+    this.element = findDOMNode(this);
     this.agent().mountAnimated(this);
     this.agent().updateAnimated(this);
   }
@@ -93,6 +103,7 @@ export default class Animated extends Component {
   }
 
   componentWillUnmount() {
+    this.element = null;
     this.agent().unmountAnimated(this);
   }
 
@@ -113,6 +124,34 @@ export default class Animated extends Component {
       return this.props.animate(options);
     }
     return options.animateFromLast(0.3);
+  }
+
+  replaceStyle(style) {
+    const el = this.element;
+    const replacedCopy = this.replacedStyle;
+    const styleCopy = this.style;
+    return AnimatedStyle.replaceStyle(this, el, style, replacedCopy, styleCopy);
+  }
+
+  setStyle(style) {
+    this.style = style;
+    const el = this.element;
+    return AnimatedStyle.setStyle(this, el, style);
+  }
+
+  restoreStyle() {
+    const el = this.element;
+    return AnimatedStyle.restoreStyle(this, el, this.replacedStyle);
+  }
+
+  replaceAll() {
+    const el = this.element;
+    AnimatedStyle.replaceStyle(this, el, this.style, this.replacedStyle);
+  }
+
+  restoreAll() {
+    const el = this.element;
+    AnimatedStyle.restoreStyle(this, el);
   }
 
   render() {
