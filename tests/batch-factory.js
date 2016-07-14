@@ -42,11 +42,26 @@ describe('BatchFactory', function() {
     if (node) {
       return render(<BatchFactory items={items} itemKey={keyGetter} batchMax={2}>{(
       batchItems => <Batch items={batchItems} itemKey={keyGetter}>{(
-        () => <ChildConstructor />
+        item => <ChildConstructor itemKey={item.key} />
       )}</Batch>
     )}</BatchFactory>, findDOMNode(node).parentNode);
     }
     return renderIntoDocument(<BatchFactory items={items} itemKey={keyGetter} batchMax={2}>{(
+      batchItems => <Batch items={batchItems} itemKey={keyGetter}>{(
+        item => <ChildConstructor itemKey={item.key} />
+      )}</Batch>
+    )}</BatchFactory>);
+  }
+
+  function renderFactory3(items, node, ChildConstructor = Child) {
+    if (node) {
+      return render(<BatchFactory items={items} itemKey={keyGetter} batchMax={3}>{(
+      batchItems => <Batch items={batchItems} itemKey={keyGetter}>{(
+        () => <ChildConstructor />
+      )}</Batch>
+    )}</BatchFactory>, findDOMNode(node).parentNode);
+    }
+    return renderIntoDocument(<BatchFactory items={items} itemKey={keyGetter} batchMax={3}>{(
       batchItems => <Batch items={batchItems} itemKey={keyGetter}>{(
         () => <Child />
       )}</Batch>
@@ -131,6 +146,64 @@ describe('BatchFactory', function() {
     });
   });
 
+  it('updates items at front of batch', function() {
+    const items = [{key: 'a'}, {key: 'b'}, {key: 'c'}, {key: 'd'}];
+    let batchFactory = renderFactory2(items.slice());
+    return Promise.resolve()
+    .then(function() {
+      batchFactory = renderFactory2([items[0], items[1], {key: 'c'}, items[3]], batchFactory);
+
+      const children = scryRenderedComponentsWithType(batchFactory, Child);
+      expect(children).to.have.length.of(4);
+      const batches = scryRenderedComponentsWithType(batchFactory, Batch);
+      expect(batches).to.have.length.of(3);
+    });
+  });
+
+  it('updates all items', function() {
+    const items = [{key: 'a'}, {key: 'b'}, {key: 'c'}, {key: 'd'}];
+    let batchFactory = renderFactory2(items.slice());
+    return Promise.resolve()
+    .then(function() {
+      batchFactory = renderFactory2([{key: 'a'}, {key: 'b'}, {key: 'c'}, {key: 'd'}], batchFactory);
+
+      const children = scryRenderedComponentsWithType(batchFactory, Child);
+      expect(children).to.have.length.of(4);
+      const batches = scryRenderedComponentsWithType(batchFactory, Batch);
+      expect(batches).to.have.length.of(3);
+    });
+  });
+
+  it('updates items at back of batch', function() {
+    const items = [{key: 'a'}, {key: 'b'}, {key: 'c'}, {key: 'd'}];
+    let batchFactory = renderFactory2(items.slice());
+    return Promise.resolve()
+    .then(function() {
+      batchFactory = renderFactory2([items[0], {key: 'b'}, items[2], items[3]], batchFactory);
+
+      const children = scryRenderedComponentsWithType(batchFactory, Child);
+      expect(children).to.have.length.of(4);
+      const batches = scryRenderedComponentsWithType(batchFactory, Batch);
+      expect(batches).to.have.length.of(3);
+    });
+  });
+
+  it('updates all items in larger batches', function() {
+    const items = [{key: 'a'}, {key: 'b'}, {key: 'c'}, {key: 'd'}, {key: 'e'}, {key: 'f'}];
+    let batchFactory = renderFactory3(items.slice());
+    return Promise.resolve()
+    .then(function() {
+      batchFactory = renderFactory3([
+        {key: 'a'}, {key: 'b'}, {key: 'c'}, {key: 'd'}, {key: 'e'}, {key: 'f'},
+      ], batchFactory);
+
+      const children = scryRenderedComponentsWithType(batchFactory, Child);
+      expect(children).to.have.length.of(6);
+      const batches = scryRenderedComponentsWithType(batchFactory, Batch);
+      expect(batches).to.have.length.of(3);
+    });
+  });
+
   it('inserts new items to old batches', function() {
     const items = [{key: 'a'}, {key: 'b'}, {key: 'c'}];
     let batchFactory = renderFactory2(items.slice(1, 2));
@@ -200,6 +273,63 @@ describe('BatchFactory', function() {
       expect(children).to.have.length.of(2);
       const batches = scryRenderedComponentsWithType(batchFactory, Batch);
       expect(batches).to.have.length.of(3);
+    });
+  });
+
+  it('removes old items', function() {
+    const items = [{key: 'a'}, {key: 'b'}, {key: 'c'}, {key: 'd'}, {key: 'e'}, {key: 'f'}];
+    let batchFactory = renderFactory2(items);
+    return Promise.resolve()
+    .then(function() {
+      batchFactory = renderFactory2([items[0], items[4], items[5]], batchFactory);
+
+      const children = scryRenderedComponentsWithType(batchFactory, Child);
+      expect(children).to.have.length.of(3);
+      const batches = scryRenderedComponentsWithType(batchFactory, Batch);
+      expect(batches).to.have.length.of(3);
+    });
+  });
+
+  it('removes old items', function() {
+    const items = [{key: 'a'}, {key: 'b'}, {key: 'c'}, {key: 'd'}, {key: 'e'}, {key: 'f'}];
+    let batchFactory = renderFactory2(items);
+    return Promise.resolve()
+    .then(function() {
+      batchFactory = renderFactory2([items[0], items[3]], batchFactory);
+
+      const children = scryRenderedComponentsWithType(batchFactory, Child);
+      expect(children).to.have.length.of(2);
+      expect(children[1].props.itemKey).to.equal('d');
+      const batches = scryRenderedComponentsWithType(batchFactory, Batch);
+      expect(batches).to.have.length.of(3);
+    });
+  });
+
+  it('removes old items', function() {
+    const items = [{key: 'a'}, {key: 'b'}, {key: 'c'}, {key: 'd'}, {key: 'e'}, {key: 'f'}];
+    let batchFactory = renderFactory2(items);
+    return Promise.resolve()
+    .then(function() {
+      batchFactory = renderFactory2([items[0], items[1], items[4], items[5]], batchFactory);
+
+      const children = scryRenderedComponentsWithType(batchFactory, Child);
+      expect(children).to.have.length.of(4);
+      const batches = scryRenderedComponentsWithType(batchFactory, Batch);
+      expect(batches).to.have.length.of(3);
+    });
+  });
+
+  it('removes old items', function() {
+    const items = [{key: 'a'}, {key: 'b'}, {key: 'c'}, {key: 'd'}, {key: 'e'}, {key: 'f'}];
+    let batchFactory = renderFactory2(items);
+    return Promise.resolve()
+    .then(function() {
+      batchFactory = renderFactory2([items[1], items[2], items[4], items[5]], batchFactory);
+
+      const children = scryRenderedComponentsWithType(batchFactory, Child);
+      expect(children).to.have.length.of(4);
+      const batches = scryRenderedComponentsWithType(batchFactory, Batch);
+      expect(batches).to.have.length.of(4);
     });
   });
 

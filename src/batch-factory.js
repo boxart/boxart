@@ -63,7 +63,7 @@ export default class BatchFactory extends Component {
         newState.subbatchs.push([]);
       }
 
-      for (; b < newState.subbatchs.length; b++) {
+      for (; b < newState.subbatchs.length && bStart < newItems.length; b++) {
         let batch = newState.subbatchs[b];
         // Remove, add, and update items
         for (; i < bStart + batch.length && i < newItems.length; i++) {
@@ -91,14 +91,12 @@ export default class BatchFactory extends Component {
             }
             if (oldItemStill) {
               // Update
-              if (batch[bi].key && batch[bi].key === key) {
+              if (bi === oldItemIndex && batch[bi].key && batch[bi].key === key) {
                 batch[bi] = newItem;
               }
               // Remove old version, Add new version
               else {
-                if (oldItemIndex >= 0) {
-                  batch.splice(oldItemIndex, 1);
-                }
+                batch.splice(oldItemIndex, 1);
                 batch.splice(bi, 0, newItem);
               }
             }
@@ -110,6 +108,7 @@ export default class BatchFactory extends Component {
               if (inNext) {
                 // If length zero, drop batch entirely.
                 if (bi === 0) {
+                  batch.length = 0;
                   newState.subbatchs.splice(b, 1);
                   // Decrement batch index so next loop considers the "next"
                   // batch that has taken the index of the one just dropped.
@@ -120,6 +119,7 @@ export default class BatchFactory extends Component {
                 else {
                   batch.splice(bi, batch.length - bi);
                 }
+                i--;
               }
               else {
                 if (batch.length === this.subbatchMax) {
@@ -220,7 +220,7 @@ export default class BatchFactory extends Component {
       }
     }
     return (<Batch {...this.props} items={batches} itemKey={this.batchKey}>{
-      this.renderBatch
+      this.props.children
     }</Batch>);
   }
 }
