@@ -110,9 +110,12 @@ export default class Batch extends Component {
 
   render() {
     const children = this.state.items;
-    const props = this.props;
-    const Tag = props.component || 'div';
-    return (<Tag {...props}>{children}</Tag>);
+    // Need to remove items and itemKey before passing to the underlying tag.
+    const componentProps = Object.assign({}, this.props);
+    delete componentProps.items;
+    delete componentProps.itemKey;
+    const Tag = this.props.component || 'div';
+    return (<Tag {...componentProps}>{children}</Tag>);
   }
 }
 
