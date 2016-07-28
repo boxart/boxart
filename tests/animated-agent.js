@@ -243,6 +243,106 @@ describe('AnimatedAgent', function() {
     });
   });
 
+  it('animateFrom transforms Animated from one position to another', function() {
+    this.slow(1000);
+    render(<AnimatedAgent><div>
+      <Animated key="key" animateKey="key">
+        <div className="animated-test" style={{position: 'absolute', left: 0, top: 0}}></div>
+      </Animated>
+    </div></AnimatedAgent>, root);
+    function getPosition() {
+      const el = document.querySelector('.animated-test');
+      const {left, top} = el.getBoundingClientRect();
+      return [left, top];
+    }
+    let last = [0, 0];
+    const expectMovement = () => {
+      const current = getPosition();
+      expect(last[0]).to.be.lt(current[0]);
+      expect(last[1]).to.be.lt(current[1]);
+      last = current;
+      return new Promise(resolve => setTimeout(resolve, 100));
+    };
+    const expectEnd = () => {
+      const current = getPosition();
+      expect(last[0]).to.be.eq(current[0]);
+      expect(last[1]).to.be.eq(current[1]);
+    };
+
+    return new Promise(requestAnimationFrame)
+    .then(() => {
+      last = getPosition();
+      render(<AnimatedAgent><div>
+        <Animated key="key" animateKey="key">
+          <div className="animated-test" style={{position: 'absolute', left: 10, top: 10}}></div>
+        </Animated>
+      </div></AnimatedAgent>, root);
+      return new Promise(requestAnimationFrame)
+      .then(() => new Promise(requestAnimationFrame));
+    })
+    .then(expectMovement)
+    .then(expectMovement)
+    .then(expectMovement)
+    .then(expectMovement)
+    .then(expectEnd);
+  });
+
+  it('animateFrom transforms Animated from one position to another', function() {
+    this.slow(2000);
+    render(<AnimatedAgent><div>
+      <Animated key="key" animateKey="key">
+        <div className="animated-test" style={{position: 'absolute', left: 0, top: 0}}></div>
+      </Animated>
+    </div></AnimatedAgent>, root);
+    function getPosition() {
+      const el = document.querySelector('.animated-test');
+      const {left, top} = el.getBoundingClientRect();
+      return [left, top];
+    }
+    let last = 0;
+    const expectMovement = () => {
+      const current = getPosition();
+      expect(last[0]).to.be.lt(current[0]);
+      expect(last[1]).to.be.lt(current[1]);
+      last = current;
+      return new Promise(resolve => setTimeout(resolve, 100));
+    };
+    const expectEnd = () => {
+      const current = getPosition();
+      expect(last[0]).to.be.eq(current[0]);
+      expect(last[1]).to.be.eq(current[1]);
+    };
+
+    return new Promise(requestAnimationFrame)
+    .then(() => {
+      last = getPosition();
+      render(<AnimatedAgent><div>
+        <Animated key="key" animateKey="key">
+          <div className="animated-test" style={{position: 'absolute', left: 10, top: 10}}></div>
+        </Animated>
+      </div></AnimatedAgent>, root);
+      return new Promise(requestAnimationFrame)
+      .then(() => new Promise(requestAnimationFrame));
+    })
+    .then(expectMovement)
+    .then(expectMovement)
+    .then(() => {
+      last = getPosition();
+      render(<AnimatedAgent><div>
+        <Animated key="key" animateKey="key">
+          <div className="animated-test" style={{position: 'absolute', left: 20, top: 20}}></div>
+        </Animated>
+      </div></AnimatedAgent>, root);
+      return new Promise(requestAnimationFrame)
+      .then(() => new Promise(requestAnimationFrame));
+    })
+    .then(expectMovement)
+    .then(expectMovement)
+    .then(expectMovement)
+    .then(expectMovement)
+    .then(expectEnd);
+  });
+
   it('updates rectangles when agent moves', function() {
     let agent = render(<AnimatedAgent><div>
       <Animated key="key" animateKey="key">
