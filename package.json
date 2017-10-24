@@ -1,0 +1,27 @@
+{
+  "name": "boxart",
+  "version": "0.2.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "babel": "cd src && babel -d ../list --presets env --ignore '*.test.js' level*/*.js",
+    "webpack": "webpack",
+    "test": "jest-webpack"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Michael \"Z\" Goddard",
+    "email": "mzgoddard@gmail.com"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "hard-source-webpack-plugin": "^0.4.9",
+    "jest-webpack": "^0.3.0",
+    "webpack": "^3.8.1",
+    "webpack-dev-server": "^2.9.3",
+    "webpack-if": "^0.1.2"
+  }
+}
