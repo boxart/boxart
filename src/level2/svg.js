@@ -1,6 +1,6 @@
 // level 1
-import AnimatedState from '../level1/animated-state.new';
-import RunLoop from '../level1/runloop.new';
+import AnimatedState from '../level1/animated-state';
+import RunLoop from '../level1/runloop';
 
 class AnimatedSvg {
   constructor(options) {

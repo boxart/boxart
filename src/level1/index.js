@@ -1,5 +1,5 @@
-import AnimatedManager from './animated-manager.new';
-import AnimatedState from './animated-state.new';
+import AnimatedManager from './animated-manager';
+import AnimatedState from './animated-state';
 import AnimatedStateFactory from './animated-state-factory';
 import Bus from './bus';
 import BusAnimatedManager from './bus-animated-manager';

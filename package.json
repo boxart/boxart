@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "babel": "cd src && babel -d ../list --presets env --ignore '*.test.js' level*/*.js",
-    "webpack": "webpack",
+    "clean": "rm -r dist",
+    "babel": "cd src && babel -d ../dist --presets env --ignore '*animate.js,*present.js,*update.js,*.test.js' level*/*.js",
+    "render-functions": "webpack && node packages/render-function tmp/level0/animate.js dist/level0 && node packages/render-function tmp/level0/present.js dist/level0 && node packages/render-function tmp/level0/update.js dist/level0",
     "test": "jest-webpack"
   },
   "keywords": [],

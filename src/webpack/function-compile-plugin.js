@@ -8,10 +8,10 @@ const run = require('./run-module');
 
 class FunctionCompilePlugin {
   apply(compiler) {
-    compiler.options.module.rules.splice(0, 0, {
-      test: /\.animations\.js/,
-      loader: require.resolve('./function-compile-loader'),
-    });
+    // compiler.options.module.rules.splice(0, 0, {
+    //   test: /\.animations\.js/,
+    //   loader: require.resolve('./function-compile-loader'),
+    // });
 
     let i = 0;
     compiler.plugin('this-compilation', function(compilation, {normalModuleFactory}) {

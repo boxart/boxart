@@ -1,4 +1,4 @@
-import AnimatedState from './animated-state.new';
+import AnimatedState from './animated-state';
 
 class AnimatedStateFactory {
   constructor(animations) {

@@ -1,6 +1,3 @@
-import RunLoop from './runloop';
-import State from './state';
-
 const updateNoop = (element, state) => state;
 updateNoop.copy = dest => dest;
 const animateNoop = () => {};
@@ -16,401 +13,241 @@ const noopAnimation = {
 };
 
 const noop = () => {};
-const falseFn = () => {return false;};
-const trueFn = () => {return true;}
 
-const TransitionState_NeedBeginning = 0;
-const TransitionState_Beginning = 1;
-const TransitionState_Pending = 2;
-const TransitionState_NotRunning = 3;
-const TransitionState_NotAnimated = 4;
-const TransitionState_Running = 5;
+const TSTATES = 9;
 
-const TransitionState = {
-  NeedBeginning: TransitionState_NeedBeginning,
-  Beginning: TransitionState_Beginning,
-  Pending: TransitionState_Pending,
-  NotRunning: TransitionState_NotRunning,
-  NotAnimated: TransitionState_NotAnimated,
-  Running: TransitionState_Running,
+const EMPTY = 0;
+const INITIALIZED = 1;
+const BOUND = 2;
+const STARTING = 3;
+const PREPPED = 4;
+const PENDING = 5;
+const READY = 6;
+const WAIT_FOR_FRAME = 7;
+const RUNNING = 8;
+
+const TINPUTS = 5;
+
+const PREPARE = 0;
+const SCHEDULE = 1;
+const UNSCHEDULE = 2;
+const START = 3;
+const DONE = 4;
+
+const NONE = 0;
+const RESOLVE = 1;
+const START_SOON = 2;
+
+const __INIT__ = '__init__';
+
+const startSoon = function(_this) {
+  _this.loop.soon().then(() => transitionStep(_this, START));
 };
 
-const TransitionInput_Unschedule = -1;
-const TransitionInput_Schedule = 0;
-const TransitionInput_Start = 1;
-const TransitionInput_Cancel = 3;
-const TransitionInput_Done = 4;
-
-const TransitionInput = {
-  Unschedule: TransitionInput_Unschedule,
-  Schedule: TransitionInput_Schedule,
-  Start: TransitionInput_Start,
-  Cancel: TransitionInput_Cancel,
-  Done: TransitionInput_Done,
+const step0Soon = function(_this) {
+  _this.loop.soon().then(() => step(_this, 0));
 };
 
-class SetObj {
-  constructor() {
-    this.state = '';
-    this.order = '';
-    this.data = null;
-    this.transition = noop;
-    this.cancel = noop;
+const transitionStep = function(_this, input) {
+  let transitionState = _this.transitionState;
+  let action = NONE;
+
+  if (transitionState === STARTING || transitionState === WAIT_FOR_FRAME) {
+    if (input === START) {
+      if (transitionState === STARTING) {
+        _this.animation = {};
+      }
+
+      const state = _this.get() || 'default';
+      const defaultAnimation = _this.animations.default || noopAnimation;
+      const animation = _this.animations[state] || defaultAnimation;
+      const update = _this.animation.update = animation.update ||
+        defaultAnimation.update || updateNoop;
+      _this.animation.animate = animation.animate ||
+        defaultAnimation.animate || animateNoop;
+      const present = _this.animation.present = animation.present ||
+        defaultAnimation.present || presentNoop;
+
+      const {data} = _this;
+      const {root} = data.animated;
+      data.lastT = data.t;
+      data.t = 0;
+      data.end = update(root.element, data.end, data);
+      console.log(JSON.stringify(data.end, null, '  '));
+      if (_this.transitionState === STARTING) {
+        data.state = update.copy(data.state, data.end);
+        data.begin = update.copy(data.begin, data.end);
+      }
+      data.store = present.store(data.store, root.element, data);
+      _this.loop.add(step, _this);
+      _this.transitionState = RUNNING;
+
+      step0Soon(_this);
+      return;
+    }
   }
 
-  set(state, order, data, transition, cancel) {
-    this.state = state;
-    this.order = order;
-    this.data = data;
-    this.transition = transition;
-    this.cancel = cancel;
-
-    return this;
+  if (transitionState === EMPTY) {
+    if (input === PREPARE) {
+      transitionState = INITIALIZED;
+    }
+    else if (input === SCHEDULE) {
+      transitionState = BOUND;
+    }
   }
-}
+  else if (transitionState === INITIALIZED) {
+    if (input === SCHEDULE) {
+      action = START_SOON;
+      transitionState = STARTING;
+    }
+  }
+  else if (transitionState === BOUND) {
+    if (input === PREPARE) {
+      action = START_SOON;
+      transitionState = STARTING;
+    }
+    else if (input === UNSCHEDULE) {
+      transitionState = EMPTY;
+    }
+  }
+  else if (transitionState === PREPPED) {
+    if (input === PREPARE) {
+      transitionState = PENDING;
+    }
+    else if (input === SCHEDULE) {
+      transitionState = READY;
+    }
+  }
+  else if (transitionState === PENDING) {
+    if (input === PREPARE) {
+      action = RESOLVE;
+    }
+    else if (input === SCHEDULE) {
+      action = START_SOON;
+      transitionState = WAIT_FOR_FRAME;
+    }
+  }
+  else if (transitionState === READY) {
+    if (input === PREPARE) {
+      action = START_SOON;
+      transitionState = WAIT_FOR_FRAME;
+    }
+    else if (input === UNSCHEDULE) {
+      transitionState = PREPPED;
+    }
+  }
+  else if (transitionState === WAIT_FOR_FRAME) {
+    if (input === PREPARE) {
+      action = RESOLVE;
+    }
+    else if (input === UNSCHEDULE) {
+      transitionState = PENDING;
+    }
+  }
+  else if (transitionState === RUNNING) {
+    if (input === PREPARE || input === DONE || input === UNSCHEDULE) {
+      if (input !== UNSCHEDULE) {
+        _this.resolve();
+      }
 
-const _setObj = new SetObj();
+      const {data} = _this;
+      _this.animation.present.restore(data.animated.root.element, data.store, data);
+      _this.animation.update.copy(data.begin, data.state);
+      _this.loop.remove(step, _this);
+    }
 
-const setObj = _setObj.set.bind(_setObj);
+    if (input === PREPARE) {
+      action = START_SOON;
+      transitionState = WAIT_FOR_FRAME;
+    }
+    else if (input === UNSCHEDULE) {
+      transitionState = PENDING;
+    }
+    else if (input === DONE) {
+      transitionState = READY;
+    }
+  }
+
+  if (action !== NONE) {
+    if (action === RESOLVE) {
+      _this.resolve();
+    }
+    else if (action === START_SOON) {
+      startSoon(_this);
+    }
+  }
+  if (transitionState !== _this.transitionState) {
+    _this.transitionState = transitionState;
+  }
+};
+
+const step = function(_this, dt) {
+  if (_this.transitionState !== RUNNING) {return;}
+  const {data} = _this;
+  const {animate, present} = _this.animation;
+  data.t += dt;
+  animate(data.t, data.state, data.begin, data.end);
+  if (animate.eq && animate.eq(data.t, data.state, data.begin, data.end)) {
+    transitionStep(_this, DONE);
+  }
+  else {
+    present(data.animated.root.element, data.state, data);
+  }
+};
 
 class AnimatedState {
   constructor(animations) {
-    this.state = new State();
-
-    this._resolve = noop;
-
-    this.clear().use(animations);
-
-    this.transition = this.transition.bind(this);
-    this._transitionSetResolve = this._transitionSetResolve.bind(this);
-    this.transitionStepSchedule = this.transitionStep.bind(this, TransitionInput_Schedule);
-
-    this.cancel = this.cancel.bind(this);
-
-    this.step = this.step.bind(this);
-  }
-
-  clear() {
-    this.state.clear();
-
-    this.animation = {};
-    this.animations = null;
-    this.animated = null;
-    this.loop = null;
-
-    this.stored = false;
-    this.running = null;
-    this.insideLoop = false;
-
-    this.transitionCallback = noop;
-    this.transitionState = TransitionState_NeedBeginning;
-
+    this.state = __INIT__;
+    this.transitionState = EMPTY;
+    this.animation = null;
+    this.animations = animations;
     this.data = {
       t: 0,
+      lastT: 0,
+      store: null,
+      state: null,
+      begin: null,
+      end: null,
       animated: null,
-      store: {},
-      state: {},
-      begin: {},
-      end: {},
     };
 
-    return this;
+    this.resolve = noop;
   }
 
-  use(animations) {
-    this.state.use();
-
-    this.animations = animations;
-
-    return this;
+  get() {
+    return this.state;
   }
 
-  set(state, order, _cb) {
-    this.state.set(setObj(
-      state,
-      order,
-      _cb || noop,
-      this.transition,
-      this.cancel
-    ));
-
-    return this;
+  set(state, order, resolve = noop) {
+    this.state = state;
+    transitionStep(this, PREPARE);
+    // Set resolve after stepping the transitionState. Stepping may call the
+    // last set resolve method to signal to another object that its state
+    // transition completed in some fashion.
+    this.resolve = resolve;
   }
 
-  transition(callback) {
-    this.running = new Promise(this._transitionSetResolve);
-    this.transitionCallback = callback;
-    this.transitionStep(TransitionInput_Start);
-
-    return this.running;
-  }
-
-  cancel() {
-    try {
-      this.transitionStep(TransitionInput_Cancel);
-    }
-    catch (e) {
-      console.error(e);
-    }
-  }
-
-  _transitionSetResolve(resolve) {
-    this._resolve = resolve;
-  }
-
-  transitionStep(transitionInput) {
-    switch (this.transitionState) {
-    case TransitionState_NeedBeginning:
-      switch (transitionInput) {
-      case TransitionInput_Start:
-        this.transitionState = TransitionState_Beginning;
-        if (this.loop) {
-          this.transitionStep(TransitionInput_Schedule)
-        }
-        break;
-      }
-      break;
-
-    case TransitionState_Beginning:
-      switch (transitionInput) {
-      case TransitionInput_Schedule:
-        if (this.animated && this.loop) {
-          this.transitionState = TransitionState_NotRunning;
-          this.updateStart();
-          this.transitionStep(TransitionInput_Schedule);
-        }
-        break;
-
-      case TransitionInput_Cancel:
-        this.transitionState = TransitionState_NeedBeginning;
-        this._callCb();
-        break;
-      }
-      break;
-
-    case TransitionState_Pending:
-      switch (transitionInput) {
-      case TransitionInput_Start:
-        this.transitionState = TransitionState_NotRunning;
-        if (this.loop) {
-          this.loop.soon().then(this.transitionStepSchedule);
-        }
-        break;
-      }
-      break;
-
-    case TransitionState_NotRunning:
-      switch (transitionInput) {
-      case TransitionInput_Schedule:
-        if (this.animated && this.loop) {
-          if (this.transitionStart()) {
-            this.transitionState = TransitionState_Running;
-          }
-          else {
-            this.transitionState = TransitionState_Pending;
-            this._callCb();
-          }
-        }
-        break;
-
-      case TransitionInput_Cancel:
-        this.transitionState = TransitionState_Pending;
-        this._callCb();
-        break;
-      }
-      break;
-
-    case TransitionState_NotAnimated:
-      switch (transitionInput) {
-      case TransitionInput_Schedule:
-        if (this.animated && this.loop) {
-          this.transitionState = TransitionState_Running;
-          this._schedule();
-        }
-        break;
-
-      case TransitionInput_Cancel:
-        this.transitionState = TransitionState_Pending;
-        this.transitionEnd();
-        this._callCb();
-        break;
-      }
-      break;
-
-    case TransitionState_Running:
-      switch (transitionInput) {
-      case TransitionInput_Unschedule:
-        this.transitionState = TransitionState_NotAnimated;
-        this._unschedule();
-        break;
-
-      case TransitionInput_Cancel:
-      case TransitionInput_Done:
-        this.transitionState = TransitionState_Pending;
-        this.transitionEnd();
-        this._callCb();
-        break;
-      }
-      break;
-    }
-  }
-
-  updateStart() {
-    this.setHandlers();
-
-    const {data} = this;
-    const {root} = this.animated;
-    const {update} = this.animation;
-
-    update(root.element, data.state, data);
-    data.begin = update.copy(data.begin, data.state);
-  }
-
-  _callCb() {
-    if (this.running) {
-      this.running = null;
-      this.transitionCallback();
-      this._resolve();
-    }
-  }
-
-  transitionStart() {
-    this.data.begin.tsub = 0;
-    this.data.t = 0;
-    this.setHandlers();
-
-    const {data} = this;
-    const {root} = this.animated;
-    const {update, present} = this.animation;
-
-    update(root.element, data.end, data);
-    if (update.should && !update.should(data.begin, data.end)) {
-      return false;
-    }
-
-    this.loopAdd();
-    if (!this.stored) {
-      this.stored = true;
-      present.store(data.store, root.element, data);
-    }
-    return true;
-  }
-
-  transitionEnd() {
-    this.loopRemove();
-    this.restore();
-  }
-
-  store() {
-    const {data} = this;
-    const {root} = this.animated;
-    const {update, present} = this.animation;
-
-    if (this.running && this.animated && !this.stored) {
-      this.stored = true;
-      present.store(data.store, root.element, data);
-      update(root.element, data.end, data);
-    }
-  }
-
-  restore() {
-    if (this.animated && this.stored) {
-      const {data} = this;
-      const {root} = this.animated;
-      const {update, present} = this.animation;
-
-      this.stored = false;
-      present.restore(root.element, data.store, data);
-      data.begin = update.copy(data.begin, data.state);
-    }
-  }
-
-  setHandlers() {
-    const state = this.state.get() || 'default';
-    const defaultAnimation = this.animations.default || noopAnimation;
-    const animation = this.animations[state] || defaultAnimation;
-    this.animation.update = animation.update || defaultAnimation.update || updateNoop;
-    this.animation.animate = animation.animate || defaultAnimation.animate || animateNoop;
-    this.animation.present = animation.present || defaultAnimation.present || presentNoop;
-  }
-
-  restart() {
-    this.data.begin.tsub += this.data.t;
-    this.data.t = 0;
-  }
-
-  loopAdd() {
-    if (this.running && this.animated && !this.insideLoop) {
-      this.insideLoop = true;
-      this.loop.add(this);
-    }
-  }
-
-  loopRemove() {
-    if (this.insideLoop) {
-      this.insideLoop = false;
-      this.loop.remove(this);
-    }
-  }
-
-  step(dt) {
-    if (!this.animated) {return;}
-    if (!this.stored) {
-      return this.loop.soon()
-      .then(() => this.store())
-      .then(() => this.step(dt));
-    }
-    const {data} = this;
-    const {animate} = this.animation;
-    data.t += dt;
-    animate(data.t, data.state, data.begin, data.end);
-    if (
-      animate.eq && animate.eq(data.t, data.state, data.begin, data.end)
-    ) {
-      this.transitionStep(TransitionInput_Done);
-    }
-    this.animation.present(this.animated.root.element, data.state, data);
+  setThen(state) {
+    return new Promise(resolve => this.set(state, null, resolve));
   }
 
   schedule(animated, loop) {
-    this.animated = animated;
     this.data.animated = animated;
-    if (!this.loop) {
-      (loop || RunLoop.main).soon().then(this.transitionStepSchedule);
-    }
-    else {
-      (loop || this.loop).soon().then(this.transitionStepSchedule);
-    }
-    this.loop = (loop || this.loop || RunLoop.main);
-    return this;
-  }
-
-  _schedule() {
-    if (this.animated) {
-      this.loopAdd();
-      this.store();
-    }
+    this.loop = loop;
+    transitionStep(this, SCHEDULE);
   }
 
   unschedule() {
-    this.restore();
-    this.animated = null;
+    transitionStep(this, UNSCHEDULE);
     this.data.animated = null;
-    if (this.loop) {
-      this.loop.soon()
-      .then(() => this.transitionStep(TransitionInput_Unschedule));
-    }
-    return this;
   }
 
-  _unschedule() {
-    if (!this.animated) {
-      this.loopRemove();
-    }
+  transitionStep(input) {
+    transitionStep(this, input);
   }
 
-  destroy() {
-    this.unschedule();
+  step(dt) {
+    step(this, dt);
   }
 }
 

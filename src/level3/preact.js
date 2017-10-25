@@ -6,12 +6,12 @@ import present from '../level0/present';
 import update from '../level0/update';
 
 // level 1
-import AnimatedManager from '../level1/animated-manager.new';
+import AnimatedManager from '../level1/animated-manager';
 import AnimatedStateFactory from '../level1/animated-state-factory';
 import Bus from '../level1/bus';
 import BusAnimatedManager from '../level1/bus-animated-manager';
 import Matcher from '../level1/matcher';
-import RunLoop from '../level1/runloop.new';
+import RunLoop from '../level1/runloop';
 
 // level 2
 import PreactComponentTransition from '../level2/preact-component-transition';
