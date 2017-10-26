@@ -1,6 +1,6 @@
 const astRegistry = require('../level0/ast-registry');
 
-module.exports = function() {
+module.exports = function(source) {
   this.cacheable(true);
   this.addDependency(this.resource);
 
@@ -24,10 +24,5 @@ module.exports = function() {
     return;
   }
 
-  return `
-  const funcRegistry = require('./function-registry');
-  module.exports = funcRegistry(${
-    require(this.resource).funcRegistry().toString()
-  });
-  `;
+  return source;
 };

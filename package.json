@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "clean": "rm -r dist",
-    "babel": "cd src && babel -d ../dist --presets env --ignore '*animate.js,*present.js,*update.js,*.test.js' level*/*.js",
-    "render-functions": "webpack && node packages/render-function tmp/level0/animate.js dist/level0 && node packages/render-function tmp/level0/present.js dist/level0 && node packages/render-function tmp/level0/update.js dist/level0",
+    "clean": "rm -r dist lib",
+    "babel": "cd src && babel -d ../lib --presets env --ignore '*animate.js,*present.js,*update.js,*.test.js' */*.js",
+    "build": "yarn run babel && yarn run render-functions",
+    "render-functions": "webpack && node packages/render-function tmp/level0/animate.js lib/level0 && node packages/render-function tmp/level0/present.js lib/level0 && node packages/render-function tmp/level0/update.js lib/level0",
     "test": "jest-webpack"
   },
   "keywords": [],
@@ -24,5 +25,8 @@
     "webpack": "^3.8.1",
     "webpack-dev-server": "^2.9.3",
     "webpack-if": "^0.1.2"
+  },
+  "dependencies": {
+    "jest": "20"
   }
 }

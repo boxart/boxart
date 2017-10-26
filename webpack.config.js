@@ -17,10 +17,7 @@ module.exports = {
   },
   module: {
     rules: [
-      {
-        test: /level0\/(?:animate|present|update)\.js$/,
-        loader: dir('src/webpack/function-object-loader.js'),
-      },
+      FunctionCompilePlugin.level0Rule(),
     ],
   },
   plugins: [

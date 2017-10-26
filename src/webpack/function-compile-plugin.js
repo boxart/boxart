@@ -1,4 +1,4 @@
-const {basename} = require('path');
+const {basename, join} = require('path');
 
 const LibraryTemplatePlugin = require("webpack/lib/LibraryTemplatePlugin");
 const SingleEntryPlugin = require('webpack/lib/SingleEntryPlugin');
@@ -7,12 +7,19 @@ const webpack = require('webpack');
 const run = require('./run-module');
 
 class FunctionCompilePlugin {
-  apply(compiler) {
-    // compiler.options.module.rules.splice(0, 0, {
-    //   test: /\.animations\.js/,
-    //   loader: require.resolve('./function-compile-loader'),
-    // });
+  level0Rule() {
+    return FunctionCompilePlugin.level0Rule();
+  }
 
+  buildTime() {
+    return FunctionCompilePlugin.buildTime();
+  }
+
+  runtime() {
+    return FunctionCompilePlugin.runtime();
+  }
+
+  apply(compiler) {
     let i = 0;
     compiler.plugin('this-compilation', function(compilation, {normalModuleFactory}) {
       compilation.plugin('normal-module-loader', function(loaderContext) {
@@ -102,5 +109,25 @@ class FunctionCompilePlugin {
     });
   }
 }
+
+FunctionCompilePlugin.level0Rule = () => (
+  {
+    test: /level0\/(?:animate|present|update)\.js$/,
+    include: [join(__dirname, '../..')],
+    loader: FunctionCompilePlugin.runtime(),
+  }
+);
+
+FunctionCompilePlugin.buildTime = () => (
+  {
+    loader: require.resolve('./function-compile-loader'),
+  }
+);
+
+FunctionCompilePlugin.runtime = () => (
+  {
+    loader: require.resolve('./function-registry-loader'),
+  }
+);
 
 module.exports = FunctionCompilePlugin;
