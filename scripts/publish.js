@@ -81,6 +81,7 @@ const main = async (options) => {
   for (const packageInfo of packages) {
     await publishPackage(Object.assign({}, options, {packageInfo}));
   }
+  await publishPackage(Object.assign({}, options, {packageInfo: {name: '..'}}));
 };
 
 if (process.mainModule === module) {

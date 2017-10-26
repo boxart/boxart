@@ -1,3 +1,4 @@
+const {spawn} = require('child_process');
 const {join, resolve} = require('path');
 
 const {FileSystem} = require('./filesystem');
@@ -15,10 +16,12 @@ class Runtime {
   spawn({command, args, cwd}) {
     if (this.dryRun) {
       this.logger.log(`Spawn ${command}.`);
-      return;
+      return Promise.resolve({
+        code: 0,
+        stdout: new Buffer([]),
+        stderr: new Buffer([]),
+      });
     }
-
-    return;
 
     return new Promise((resolve, reject) => {
       const child = spawn(command, args, {
@@ -41,9 +44,10 @@ class Runtime {
       const stdout = concat(child.stdout);
       const stderr = concat(child.stderr);
 
-      child.on('exit', () => {
+      child.on('exit', code => {
         Promise.all([stdout, stderr]).then(([stdout, stderr]) => {
           resolve({
+            code,
             stdout,
             stderr,
           });
