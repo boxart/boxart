@@ -6,6 +6,7 @@ class AnimatedManager {
     this.loop = loop;
 
     this.states = {};
+    this.elementToId = new Map();
   }
 
   get(type, id) {
@@ -34,10 +35,20 @@ class AnimatedManager {
   setElement(type, id, element) {
     const animatedState = this.get(type, id);
     if (animatedState) {
+      this.elementToId.set(element, id);
       const animated = animatedState.data.animated || {root: {element: null}};
       animated.root.element = element;
       animatedState.schedule(animated, this.loop);
     }
+  }
+
+  getAnimatedState(element) {
+    this.states[this.elementToId.get(element)];
+  }
+
+  getAnimated(element) {
+    const state = this.getAnimatedState(element);
+    return state && state.data.animated;
   }
 }
 

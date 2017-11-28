@@ -57,6 +57,14 @@ class Preact extends Component {
   render({children}) {
     return this.crawler.inject(children[0], 'root', true);
   }
+
+  getManager() {
+    return this.manager;
+  }
+
+  getAnimated(element) {
+    return this.manager.getAnimated(element.base || element);
+  }
 }
 
 export default Preact;

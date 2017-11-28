@@ -36,7 +36,7 @@ class Preact extends Component {
 
     const {loop, animations} = this.props;
 
-    const bus = new Bus();
+    const bus = this.bus = new Bus();
 
     const animationTypes = {};
     const matcher = new Matcher();
@@ -47,7 +47,7 @@ class Preact extends Component {
 
     const {create: factory} = new AnimatedStateFactory(animations);
 
-    const manager = new AnimatedManager(factory, loop || RunLoop.main);
+    const manager = this.manager = new AnimatedManager(factory, loop || RunLoop.main);
 
     new BusAnimatedManager(manager, bus);
 
@@ -61,6 +61,14 @@ class Preact extends Component {
 
   render({children}) {
     return this.crawler.inject(children[0], 'root', true);
+  }
+
+  getManager() {
+    return this.manager;
+  }
+
+  getAnimated(element) {
+    return this.manager.getAnimated(element.base || element);
   }
 }
 

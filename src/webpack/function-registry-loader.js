@@ -6,17 +6,18 @@ module.exports = function(source) {
 
   if (this.compileBoxartFunction) {
     const done = this.async();
-    this.compileBoxartFunction(this.resource, function(error, astRegistry) {
+    this.compileBoxartFunction(this.resource, function(error, ast) {
       if (error) {
         done(error);
         return;
       }
+      const astRegistry = require('../level0/ast-registry');
       done(
         null,
         `
         const funcRegistry = require('./function-registry');
         module.exports = funcRegistry(${
-          astRegistry.funcRegistry().toString()
+          astRegistry(ast).funcRegistry().toString()
         });
         `
       );

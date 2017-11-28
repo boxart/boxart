@@ -26,12 +26,4 @@ module.exports = function(source) {
   }
 
   return source;
-  // throw new Error('Needs compile plugin');
-  const astRegistry = require('../level0/ast-registry');
-  return `
-  const funcRegistry = require('./function-registry');
-  module.exports = funcRegistry(${
-    astRegistry(require(this.resource)).funcRegistry().toString()
-  });
-  `;
 };
