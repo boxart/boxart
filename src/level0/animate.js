@@ -1,13 +1,44 @@
+/**
+ * `animate` functions manipulate a state object according to the inputs t,
+ * state, begin, end. As an animation steps it will call its animate function
+ * with a progressing `t` value commonly being the number of seconds divided by
+ * the duration of the animation.
+ *
+ * t is a time interval unit ranging from values 0 to 1. 
+ *
+ * @module animate
+ * @example
+ * // Return the value for this function at point t (0 to 1) with the input
+ * // state, begin, end. If state is an object the value can be set directly
+ * // to a member of state. The update function will ensure that state, begin,
+ * // and end, have the same shape and are defined.
+ * function f(t, state, begin, end) {}
+ * // Return the value for this function optionally considering function b to
+ * // be the target destination at t = 1. Think of this function as from `a`
+ * // to `b`.
+ * f.a = function(b, t, state, begin, end) {}
+ * // Return true if state has reached what this function considers to be the
+ * // end. Some functions may think that is t >= 1. Some functions may think
+ * // that is state === end.
+ * f.eq = function(t, state, begin, end) {}
+ */
+
 const _ast = require('./function-ast');
 const astRegistry = require('./ast-registry');
-const ast = astRegistry(_ast);
+const ast = astRegistry(_ast).disableBind();
 const math = require('./math');
 
 const r = _ast.r;
 
+/**
+ * Create an animate function that calls the passed function argument with t,
+ * state, begin, and end return its result.
+ *
+ * @function value
+ */
 const valueArgs = [['fn'], r('fn')];
 const value = ast.context(({
-  methods, func, call, r, l, read, eq
+  methods, func, call, r, l, read, eq, w, body,
 }) => (fn => (
   methods({
     // (t, state, begin, end) => fn(t, state, begin, end)
@@ -20,6 +51,10 @@ const value = ast.context(({
     ]),
     // (t, state, begin, end) => fn(t, state, begin, end) == fn(1, state, begin, end)
     eq: func(['t', 'state', 'begin', 'end'], [
+      // call(l(func(['a', 'b'], [eq(r('a'), r('b'))])), [
+      //   call(l(fn), [r('t'), r('state'), r('begin'), r('end')]),
+      //   call(l(fn), [l(1), r('state'), r('begin'), r('end')])
+      // ]),
       eq(
         call(l(fn), [r('t'), r('state'), r('begin'), r('end')]),
         call(l(fn), [l(1), r('state'), r('begin'), r('end')])
@@ -29,6 +64,68 @@ const value = ast.context(({
 )));
 value.args = valueArgs;
 
+/**
+ * Create a function with the output of another animate call and a a-to-b
+ * function to replace the a-to-b from the other animate call.
+ *
+ * @function a
+ */
+const aArgs = [['fn', 'afn'], r('fn'), r('afn')];
+const a = ast.context(({
+  methods, func, call, r, l, read, lo,
+}) => ((fn, afn) => (
+  methods({
+    // (t, state, begin, end) => fn(t, state, begin, end)
+    main: func(['t', 'state', 'begin', 'end'], [
+      call(l(fn), [r('t'), r('state'), r('begin'), r('end')]),
+    ]),
+    // (a, t, state, begin, end) => fn(t, state, begin, end)
+    a: func(['a', 't', 'state', 'begin', 'end'], [
+      call(l(afn), [r('a'), r('t'), r('state'), r('begin'), r('end')]),
+    ]),
+    // (t, state, begin, end) => fn(t, state, begin, end) == fn(1, state, begin, end)
+    eq: func(['t', 'state', 'begin', 'end'], [
+      call(lo(l(fn), l('eq')), [r('t'), r('state'), r('begin'), r('end')]),
+    ]),
+  })
+)));
+a.args = aArgs;
+
+/**
+ * Create a function with the output of another animate call and an eq
+ * when-animate-is-complete function to replace the eq from the other animate
+ * call.
+ *
+ * @function done
+ */
+const doneArgs = [['fn', 'eqfn'], r('fn'), r('eqfn')];
+const done = ast.context(({
+  methods, func, call, r, l, read, lo,
+}) => ((fn, donefn) => (
+  methods({
+    // (t, state, begin, end) => fn(t, state, begin, end)
+    main: func(['t', 'state', 'begin', 'end'], [
+      call(l(fn), [r('t'), r('state'), r('begin'), r('end')]),
+    ]),
+    // (a, t, state, begin, end) => fn(t, state, begin, end)
+    a: func(['a', 't', 'state', 'begin', 'end'], [
+      call(lo(l(fn), l('a')), [r('a'), r('t'), r('state'), r('begin'), r('end')]),
+    ]),
+    // (t, state, begin, end) => fn(t, state, begin, end) == fn(1, state, begin, end)
+    eq: func(['t', 'state', 'begin', 'end'], [
+      call(l(donefn), [r('t'), r('state'), r('begin'), r('end')]),
+    ]),
+  })
+)));
+done.args = doneArgs;
+
+/**
+ * Create an animate function that calls the passed function and returns the
+ * result. It's a-to-b method calls the passed function and the b and
+ * interpolates between them depending on `t`.
+ *
+ * @function lerp
+ */
 const lerpArgs = [['fn'], r('fn')];
 const lerp = ast.context(({
   methods, func, call, l, r, write, add, mul, sub, min, gte
@@ -50,6 +147,13 @@ const lerp = ast.context(({
 )));
 lerp.args = lerpArgs;
 
+/**
+ * Create an animate function that calls each function in the given array with
+ * the same t, state, begin, and end values. This is useful to perform
+ * different behaviours on the same object in the state's shape.
+ *
+ * @function union
+ */
 const unionArgs = [['set'], r('set')];
 const union = ast.context(({
   methods, func, for_of, call, r, lo, w, l, branch, and,
@@ -95,6 +199,107 @@ const union = ast.context(({
 ));
 union.args = unionArgs;
 
+/**
+ * Create a function that returns the absolute value of the returned result of
+ * the passed function.
+ *
+ * @function abs
+ */
+
+/**
+ * Create a function that returns the sumed value of the returned results of
+ * the two passed functions.
+ *
+ * @function add
+ */
+
+/**
+ * Create a function that returns the difference of the returned results of
+ * the two passed functions.
+ *
+ * @function sub
+ */
+
+/**
+ * Create a function that returns the multiplied value of the returned results
+ * of the two passed functions.
+ *
+ * @function mul
+ */
+
+/**
+ * Create a function that returns the divided value of the returned results of
+ * the two passed functions.
+ *
+ * @function div
+ */
+
+/**
+ * Create a function that returns the remainder of the divided of the returned
+ * results of the two passed functions.
+ *
+ * @function mod
+ */
+
+/**
+ * Create a function that returns the minimum value of the returned results of
+ * the two passed functions.
+ *
+ * @function min
+ */
+
+/**
+ * Create a function that returns the maximum value of the returned results of
+ * the two passed functions.
+ *
+ * @function max
+ */
+
+/**
+ * Create a function that returns whether the returned results of
+ * the two passed functions are equivalent.
+ *
+ * @function eq
+ */
+
+/**
+ * Create a function that returns whether the returned results of
+ * the two passed functions are different.
+ *
+ * @function ne
+ */
+
+/**
+ * Create a function that returns whether the returned result of
+ * the first passed functions is less than the second passed function's result.
+ *
+ * @function lt
+ */
+
+/**
+ * Create a function that returns whether the returned result of the first
+ * passed functions is less than or equal to the second passed function's
+ * result.
+ *
+ * @function lte
+ */
+
+/**
+ * Create a function that returns whether the returned result of
+ * the first passed functions is greater than the second passed function's
+ * result.
+ *
+ * @function gt
+ */
+
+/**
+ * Create a function that returns whether the returned result of the first
+ * passed functions is greater than or equal to the second passed function's
+ * result.
+ *
+ * @function gte
+ */
+
 const [
   abs,
   add, sub, mul, div, mod,
@@ -114,6 +319,11 @@ const [
   )
 )));
 
+/**
+ * Create a function that returns the given constant value.
+ *
+ * @function constant
+ */
 const constantArgs = [['c'], r('c')];
 const constant = ast.context(({
   func, l
@@ -122,6 +332,66 @@ const constant = ast.context(({
 ));
 constant.args = constantArgs;
 
+/**
+ * Create a function that returns the passed t value.
+ *
+ * @function t
+ */
+const tArgs = [[]];
+const t = ast.context(({
+  methods, func, r, eq, l,
+}) => () => (
+  methods({
+    // (t, state, begin, end) => t
+    main: func(['t', 'state', 'begin', 'end'], [
+      r('t'),
+    ]),
+    // (a, t, state, begin, end) => t
+    a: func(['a', 't', 'state', 'begin', 'end'], [
+      r('t'),
+    ]),
+    // (t, state, begin, end) => t == 1
+    eq: func(['t', 'state', 'begin', 'end'], [
+      eq(r('t'), l(1)),
+    ]),
+  })
+));
+t.args = tArgs;
+
+/**
+ * Create a function that returns the passed state value.
+ *
+ * @function state
+ */
+const stateArgs = [[]];
+const state = ast.context(({
+  methods, func, r, eq, l,
+}) => () => (
+  methods({
+    // (t, state, begin, end) => state
+    main: func(['t', 'state', 'begin', 'end'], [
+      r('state'),
+    ]),
+    // (a, t, state, begin, end) => state
+    a: func(['a', 't', 'state', 'begin', 'end'], [
+      r('state'),
+    ]),
+    // (t, state, begin, end) => t == 1
+    eq: func(['t', 'state', 'begin', 'end'], [
+      eq(r('t'), l(1)),
+    ]),
+  })
+));
+state.args = stateArgs;
+
+/**
+ * Create a function that passes a value between the begin and end value based
+ * on the given position (pos) value. A 0 position value is the begin value. A
+ * 1 position value is the end value. Any value between 0 and 1 is
+ * proprotionally positioned on the line between begin and end.
+ *
+ * @function at
+ */
 const atArgs = [['pos'], r('pos')];
 const at = ast.context(({
   func, l, r, add, mul, sub
@@ -133,14 +403,30 @@ const at = ast.context(({
 ));
 at.args = atArgs;
 
+/**
+ * Create a function that returns the begin value.
+ *
+ * @function begin
+ */
 const beginArgs = [[]];
 const begin = ast.context(() => () => at(0));
 begin.args = beginArgs;
 
+/**
+ * Create a function that returns the end value.
+ *
+ * @function end
+ */
 const endArgs = [[]];
 const end = ast.context(() => () => at(1));
 end.args = endArgs;
 
+/**
+ * Create a function that returns the value portionally based on t between the
+ * first and second function in the passed array.
+ *
+ * @function fromTo
+ */
 const fromToArgs = [['[a, b]'], [r('a'), r('b')]];
 const fromTo = ast.context(({
   func, l, call, lo, r, methods
@@ -160,6 +446,72 @@ const fromTo = ast.context(({
 }));
 fromTo.args = fromToArgs;
 
+/**
+ * Create a function that calls the passed second argument with the key member
+ * of the state, begin, and end values.
+ *
+ * @function get
+ */
+const getArgs = [['key', 'fn'], r('key'), r('fn')];
+const get = ast.context(({
+  methods, func, call, l, r, lo, or,
+}) => (key, fn) => (
+  methods({
+    main: func(['t', 'state', 'begin', 'end'], [
+      call(l(fn), [r('t'), lo(r('state'), l(key)), lo(r('begin'), l(key)), lo(r('end'), l(key))]),
+    ]),
+    a: func(['b', 't', 'state', 'begin', 'end'], [
+      call(lo(l(fn), l('a')), [or(lo(r('b'), l('a')), r('b')), r('t'), lo(r('state'), l(key)), lo(r('begin'), l(key)), lo(r('end'), l(key))]),
+    ]),
+    eq: func(['t', 'state', 'begin', 'end'], [
+      call(lo(l(fn), l('eq')), [r('t'), lo(r('state'), l(key)), lo(r('begin'), l(key)), lo(r('end'), l(key))]),
+    ]),
+  })
+));
+get.args = getArgs;
+
+// const _withArgs = [['fn', 'key'], r('fn'), r('key')];
+// const _with = (fn, key) => get(key, fn);
+// _with.args = _withArgs;
+
+/**
+ * Create a function that sets the key's member of the state value with the
+ * result of the called function.
+ *
+ * @function set
+ */
+const setArgs = [['k', 'fn'], r('k'), r('fn')];
+const set = ast.context(({
+  methods, func, st, r, l, call, lo, or, body,
+}) => (key, fn) => (
+  methods({
+    main: func(['t', 'state', 'begin', 'end'], [
+      st(
+        r('state'),
+        l(key),
+        call(l(fn), [r('t'), r('state'), r('begin'), r('end')])
+      ),
+      r('state'),
+    ]),
+    fn: fn,
+    a: func(['b', 't', 'state', 'begin', 'end'], [
+      st(r('state'), l(key), call(lo(l(fn), l('a')), [or(lo(r('b'), l('fn')), r('b')), r('t'), r('state'), r('begin'), r('end')])),
+      r('state'),
+    ]),
+    eq: func(['t', 'state', 'begin', 'end'], [
+      call(lo(l(fn), l('eq')), [r('t'), r('state'), r('begin'), r('end')]),
+    ]),
+  })
+));
+set.args = setArgs;
+
+/**
+ * Create a function that iterates the given object's keys and values, setting
+ * the state's key member by the called value function given the key member of
+ * state, begin, and end.
+ *
+ * @function object
+ */
 const objectArgs = [['obj'], r('obj')];
 const object = ast.context(({
   methods, func, l, lo, for_of, store, read, call, branch, literal, eq, load,
@@ -179,22 +531,12 @@ const object = ast.context(({
           ])
         ),
       ]),
-      // call(l('console.log'), [r('state')]),
       read('state'),
     ]),
     o: methods(obj),
     a: func(['b', 't', 'state', 'begin', 'end'], [
       for_of(obj, ['key', 'value'], [
-        // store(r('state'), r('key'), l(1)),
         store(r('state'), r('key'),
-          // call(lo(r('value'), l('a')), [
-          //   r('value'),
-          //   // lo(lo(r('b'), l('o')), r('key')),
-          //   r('t'),
-          //   lo(r('state'), r('key')),
-          //   lo(r('begin'), r('key')),
-          //   lo(r('end'), r('key')),
-          // ])
           call(lo(r('value'), l('a')), [
             lo(lo(r('b'), l('o')), r('key')),
             r('t'),
@@ -224,6 +566,12 @@ const object = ast.context(({
 ));
 object.args = objectArgs;
 
+/**
+ * Create a function that calls the given function with every indexed member of
+ * state, begin, and end.
+ *
+ * @function array
+ */
 const arrayArgs = [['fn'], r('fn')];
 const array = ast.context(({
   methods, func, w, l, loop, lt, r, lo, call, branch, add, and,
@@ -280,6 +628,12 @@ const array = ast.context(({
 ));
 array.args = arrayArgs;
 
+/**
+ * Create a function that transforms t by one function and passing that into
+ * the first function along with state, begin, and end.
+ *
+ * @function easing
+ */
 const easingArgs = [['fn', 'tfn'], r('fn'), r('tfn')];
 const easing = ast.context(({
   methods, func, call, l, r, lo
@@ -316,6 +670,12 @@ const easing = ast.context(({
 ));
 easing.args = easingArgs;
 
+/**
+ * Create a function that calls the passed function with t transformed by a
+ * cubic ease-in function.
+ *
+ * @function easeIn
+ */
 const easeInArgs = [['fn'], r('fn')];
 const easeIn = ast.context(({
   func, mul, r, w,
@@ -327,6 +687,12 @@ const easeIn = ast.context(({
 ));
 easeIn.args = easeInArgs;
 
+/**
+ * Create a function that calls the passed function with t transformed by a
+ * cubic ease-out function.
+ *
+ * @function easeOut
+ */
 const easeOutArgs = [['fn'], r('fn')];
 const easeOut = ast.context(({
   func, mul, r, sub, w, l, add,
@@ -338,6 +704,12 @@ const easeOut = ast.context(({
 ));
 easeOut.args = easeOutArgs;
 
+/**
+ * Create a function that calls the passed function with t transformed by a
+ * cubic ease-in-out function.
+ *
+ * @function easeInOut
+ */
 const easeInOutArgs = [['fn'], r('fn')];
 const easeInOut = ast.context(({
   func, mul, r, add, sub, l, lt, branch, w,
@@ -461,6 +833,12 @@ const bezierSearch = ast.context(({
   ])
 ));
 
+/**
+ * Create a function that calls the passed function with t transformed by a
+ * cubic bezier function.
+ *
+ * @function bezier
+ */
 const bezierArgs = [['fn', 'ax', 'ay', 'bx', 'by'], r('fn'), r('ax'), r('ay'), r('bx'), r('by')];
 const bezier = ast.context(({
   func, call, r, l, w, methods,
@@ -471,6 +849,12 @@ const bezier = ast.context(({
 ));
 bezier.args = bezierArgs;
 
+/**
+ * Create a function that calls the passed function with t transformed by
+ * dividing t by a given constant duration.
+ *
+ * @function duration
+ */
 const durationArgs = [['fn', 'duration'], r('fn'), r('duration')];
 const duration = ast.context(({
   methods, func, call, l, r, lo, div, gte, mod,
@@ -500,6 +884,12 @@ const duration = ast.context(({
 ));
 duration.args = durationArgs;
 
+/**
+ * Creates a function that calls the passed function with t transformed by
+ * using its remainder divided by a constant value.
+ *
+ * @function loop
+ */
 const loopArgs = [['fn', 'loop'], r('fn'), r('loop')];
 const loop = ast.context(({
   methods, func, call, l, r, lo, div, gte, mod,
@@ -529,6 +919,12 @@ const loop = ast.context(({
 ));
 loop.args = loopArgs;
 
+/**
+ * Creates a function that calls the passed function with until the until
+ * function returns a value greater or than 1.
+ *
+ * @function repeat
+ */
 const repeatArgs = [['fn', 'until'], r('fn'), r('until')];
 const repeat = ast.context(({
   methods, func, call, l, mod, div, r, lo, mul, gte, w,
@@ -751,17 +1147,23 @@ const percent = ast.context(({
 ));
 percent.args = percentArgs;
 
-module.exports = {
+module.exports = astRegistry({
   value,
   lerp,
   union,
+  a,
+  done,
   abs,
   add, sub, mul, div, mod, min, max, eq, ne, lt, lte, gt, gte,
   constant,
+  t,
+  state,
   at,
   begin,
   end,
   fromTo,
+  get,
+  set,
   object,
   array,
   easing,
@@ -778,4 +1180,4 @@ module.exports = {
   percent,
   until: repeat,
   loop,
-};
+});
