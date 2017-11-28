@@ -7,7 +7,7 @@
     "clean": "rm -r dist lib",
     "babel": "cd src && babel -d ../lib --presets env --ignore '*animate.js,*present.js,*update.js,*.test.js' */*.js",
     "build": "yarn run babel && yarn run render-functions",
-    "render-functions": "webpack && node packages/render-function tmp/level0/animate.js lib/level0 && node packages/render-function tmp/level0/present.js lib/level0 && node packages/render-function tmp/level0/update.js lib/level0",
+    "render-functions": "webpack && node scripts/render-function -i tmp/level0/animate.js -o lib/level0 && node scripts/render-function -i tmp/level0/present.js -o lib/level0 && node scripts/render-function -i tmp/level0/update.js -o lib/level0",
     "test": "jest-webpack"
   },
   "keywords": [],
@@ -22,11 +22,14 @@
     "babel-preset-env": "^1.6.1",
     "hard-source-webpack-plugin": "^0.4.9",
     "jest-webpack": "^0.3.0",
+    "jsdoc-to-markdown": "^3.0.0",
+    "raw-loader": "^0.5.1",
     "webpack": "^3.8.1",
     "webpack-dev-server": "^2.9.3",
     "webpack-if": "^0.1.2"
   },
   "dependencies": {
+    "babel-loader": "^7.1.2",
     "jest": "20"
   }
 }
