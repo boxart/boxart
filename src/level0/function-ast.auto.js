@@ -371,7 +371,10 @@ const _compile_store = ({write, compile, pointer, stack, scope}) => {
 
   const _member = pointer.member;
   let _deref;
-  if (_member.op === 'literal') {
+  if (_member.op === 'literal' && _member.value.op) {
+    _deref = expr([token('['), compile(_member.value), token(']')]);
+  }
+  else if (_member.op === 'literal') {
     _deref = expr([token('.'), literal(_member.value)]);
   }
   else if (_member.op === 'read' && _compile_lookup(stack, scope, _member.name)[_member.name].op === 'literal') {
@@ -468,7 +471,7 @@ const _compile_load = ({write, compile, pointer, stack, scope}) => {
 };
 
 const _compile_ops = {
-  '==': (a, b) => lift([token('('), a, token(' == '), b, token(')')]),
+  '==': (a, b) => expr([token('('), binary(token(' == '), a, b), token(')')]),
   '!=': (a, b) => lift([token('('), a, token(' != '), b, token(')')]),
   '<': (a, b) => lift([token('('), a, token(' < '), b, token(')')]),
   '<=': (a, b) => lift([token('('), a, token(' <= '), b, token(')')]),
@@ -2148,7 +2151,7 @@ const compile = (node, options = {}) => {
   // given a function generator. call it with the stated arguments and compile
   // of a function that will generate a function that works the same as a fully
   // declared and inline-able function.
-  if (typeof node === 'function') {
+  if (typeof node === 'function' && node.args) {
     node = a.func(node.args[0], [
       node(...node.args.slice(1)),
     ]);

@@ -1,6 +1,6 @@
 const _ast = require('./function-ast');
 const astRegistry = require('./ast-registry');
-const ast = astRegistry(_ast);
+const ast = astRegistry(_ast).disableBind();
 const math = require('./math');
 
 const r = _ast.r;
@@ -395,7 +395,7 @@ const should = ast.context(({
 ));
 should.args = shouldArgs;
 
-module.exports = {
+module.exports = astRegistry({
   value,
   union,
   abs,
@@ -411,4 +411,4 @@ module.exports = {
   byElement: asElement,
   rect,
   should,
-};
+});

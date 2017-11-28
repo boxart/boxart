@@ -1,6 +1,6 @@
 const _ast = require('./function-ast');
 const astRegistry = require('./ast-registry');
-const ast = astRegistry(_ast);
+const ast = astRegistry(_ast).disableBind();
 const math = require('./math');
 
 const r = _ast.r;
@@ -487,7 +487,7 @@ const object = ast.context(({
 ));
 object.args = objectArgs;
 
-module.exports = {
+module.exports = astRegistry({
   value,
   union,
   constant,
@@ -507,4 +507,4 @@ module.exports = {
   elements,
   elementArrays,
   object,
-};
+});

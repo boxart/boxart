@@ -26,8 +26,10 @@ const create = (fn, constructor = {}) => {
     return run(this, method, ...args);
   };
 
+  let autobind = true;
+
   function bindDefinition(definition) {
-    return definition;
+    if (!autobind) {return definition;}
     if (definition.op !== 'func' && definition.op !== 'methods') {
       return definition;
     }
@@ -142,6 +144,13 @@ const create = (fn, constructor = {}) => {
         Object.freeze(present);
         Object.freeze(PresentFunction.prototype);
         Object.freeze(PresentObject.prototype);
+        return present;
+      },
+    },
+    disableBind: {
+      enumerable: false,
+      value() {
+        autobind = false;
         return present;
       },
     },
