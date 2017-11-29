@@ -304,6 +304,22 @@ export default function(babel) {
     }
   };
 
+  const matchesMember = function(a, b, partial) {
+    if (t.isMemberExpression(a) && t.isMemberExpression(b)) {
+      return (
+        (
+          partial ||
+          (a.computed === b.computed && matchesMember(a.property, b.property))
+        ) &&
+        matchesMember(a.object, b.object)
+      );
+    }
+    else if (t.isIdentifier(a) && t.isIdentifier(b)) {
+      return a.name === b.name;
+    }
+    return false;
+  };
+
   const renameAll = {
     Identifier(path, state) {
       if (
@@ -413,6 +429,11 @@ export default function(babel) {
         ) {
           state[path.node.id.name] = null;
           return;
+        }
+        for (const key in state) {
+          if (matchesMember(path.node.left, state[key])) {
+            state[key] = null;
+          }
         }
         if (
           path.get('right').isFunctionExpression() ||
@@ -628,6 +649,15 @@ export default function(babel) {
             path.remove();
           }
         }
+        if (path.isCallExpression()) {
+          path.node.arguments.forEach(arg => {
+            for (const key in state) {
+              if (matchesMember(state[key], arg, true)) {
+                state[key] = null;
+              }
+            }
+          });
+        }
       }
     }
   };
@@ -759,6 +789,15 @@ export default function(babel) {
             state.__changed = (state.__changed || 0) + 1;
             path.replaceWith(t.cloneDeep(id));
           }
+          if (path.isCallExpression()) {
+            path.node.arguments.forEach(arg => {
+              for (const key in state) {
+                if (matchesMember(state[key], arg, true)) {
+                  state[key] = null;
+                }
+              }
+            });
+          }
         }
         if (
           path.isCallExpression() &&
@@ -838,6 +877,11 @@ export default function(babel) {
         ) {
           state[path.node.id.name] = null;
           return;
+        }
+        for (const key in state) {
+          if (matchesMember(path.node.left, state[key])) {
+            state[key] = null;
+          }
         }
         if (
           path.get('right').isIdentifier() &&
@@ -1438,13 +1482,22 @@ export default function(babel) {
           toB.params.unshift(t.identifier('b'));
 
           let statement = t.binaryExpression('>=', t.identifier('t'), t.numericLiteral(1));
-          for (const param of path.node.init.params.reverse()) {
+          const parentFunction = path.getFunctionParent().node;
+          for (const param of parentFunction.params.reverse()) {
             if (t.isIdentifier(param)) {
-              // statement = t.conditionalExpression(
-              //
-              //
-              //
-              // );
+              statement =
+                t.logicalExpression(
+                  '&&',
+                  t.conditionalExpression(
+                    t.memberExpression(param, t.identifier('done')),
+                    t.callExpression(
+                      t.memberExpression(param, t.identifier('done')),
+                      t.cloneDeep(path.node.init).params
+                    ),
+                    t.booleanLiteral(true)
+                  ),
+                  statement
+                );
             }
           }
 

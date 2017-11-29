@@ -30,6 +30,9 @@ function objectTo() {
       }
       return state;
     };
+    f.done = function (t) {
+      return t >= 1;
+    };
     return f;
   };
 
