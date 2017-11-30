@@ -345,7 +345,10 @@ export default function(babel) {
       return false;
     }
 
-    if (!partial && aList.length !== bList.length) {
+    if (partial && aList.length <= bList.length) {
+      return false;
+    }
+    else if (!partial && aList.length !== bList.length) {
       return false;
     }
 
@@ -1340,6 +1343,10 @@ export default function(babel) {
     state.varStack.find(item => item.state === node.name)
   );
 
+  const isElementId = (state, node) => (
+    state.varStack.find(item => item.element === node.name)
+  );
+
   const isDestId = (state, node) => (
     state.varStack.find(item => item.dest === node.name)
   );
@@ -1537,7 +1544,7 @@ export default function(babel) {
 
           let statement = t.binaryExpression('>=', t.identifier('t'), t.numericLiteral(1));
           const parentFunction = path.getFunctionParent().node;
-          for (const param of parentFunction.params.reverse()) {
+          for (const param of parentFunction.params.slice().reverse()) {
             if (t.isIdentifier(param)) {
               statement =
                 t.logicalExpression(
@@ -1558,6 +1565,68 @@ export default function(babel) {
           state[path.node.id.name + '_done'] = t.functionExpression(
             null,
             [t.identifier('t')],
+            t.blockStatement([
+              t.returnStatement(statement)
+            ])
+          );
+        }
+        // const f = function(element, state, ...
+        if (
+          path.get('init').isFunctionExpression() &&
+          path.get('init').node.params.length > 1 &&
+          // Only create copy for update functions with the param signature
+          // state, element
+          path.node.init.params[0].name === 'element' &&
+          path.node.init.params[1].name === 'state'
+        ) {
+          const parentFunction = path.getFunctionParent().node;
+
+          let statement = t.identifier('element');
+          for (const param of parentFunction.params.slice().reverse()) {
+            if (t.isIdentifier(param)) {
+              statement =
+                t.conditionalExpression(
+                  t.memberExpression(param, t.identifier('store')),
+                  t.callExpression(
+                    t.memberExpression(param, t.identifier('store')),
+                    [t.identifier('store'), t.identifier('element'), t.identifier('data')]
+                  ),
+                  statement
+                );
+            }
+          }
+          state[path.get('id').node.name + '_store'] = t.functionExpression(
+            // id
+            null,
+            // parameters
+            [t.identifier('store'), t.identifier('element'), t.identifier('data')],
+            // body
+            t.blockStatement([
+              
+              t.returnStatement(statement),
+            ])
+          );
+
+          statement = t.identifier('store');
+          for (const param of parentFunction.params.slice().reverse()) {
+            if (t.isIdentifier(param)) {
+              statement =
+              t.conditionalExpression(
+                t.memberExpression(param, t.identifier('restore')),
+                t.callExpression(
+                  t.memberExpression(param, t.identifier('restore')),
+                  [t.identifier('element'), t.identifier('store'), t.identifier('data')]
+                ),
+                statement
+              );
+            }
+          }
+          state[path.get('id').node.name + '_restore'] = t.functionExpression(
+            // id
+            null,
+            // parameters
+            [t.identifier('element'), t.identifier('store'), t.identifier('data')],
+            // body
             t.blockStatement([
               t.returnStatement(statement)
             ])
@@ -1711,6 +1780,24 @@ export default function(babel) {
       ) {
         state[path.node.left.object.name + '_done'] = null;
       }
+      else if (
+        t.isMemberExpression(path.node.left) &&
+        t.isIdentifier(path.node.left.object) &&
+        t.isIdentifier(path.node.left.property) &&
+        path.node.left.property.name === 'store' &&
+        state[path.node.left.object.name + '_store']
+      ) {
+        state[path.node.left.object.name + '_store'] = null;
+      }
+      else if (
+        t.isMemberExpression(path.node.left) &&
+        t.isIdentifier(path.node.left.object) &&
+        t.isIdentifier(path.node.left.property) &&
+        path.node.left.property.name === 'restore' &&
+        state[path.node.left.object.name + '_restore']
+      ) {
+        state[path.node.left.object.name + '_restore'] = null;
+      }
     },
     Loop: {
       enter(path, state) {
@@ -1829,6 +1916,30 @@ export default function(babel) {
             '=',
             t.memberExpression(path.node.argument, t.identifier('done')),
             state[path.node.argument.name + '_done']
+          )
+        ));
+      }
+      if (
+        t.isIdentifier(path.node.argument) &&
+        state[path.node.argument.name + '_store']
+      ) {
+        path.insertBefore(t.expressionStatement(
+          t.assignmentExpression(
+            '=',
+            t.memberExpression(path.node.argument, t.identifier('store')),
+            state[path.node.argument.name + '_store']
+          )
+        ));
+      }
+      if (
+        t.isIdentifier(path.node.argument) &&
+        state[path.node.argument.name + '_restore']
+      ) {
+        path.insertBefore(t.expressionStatement(
+          t.assignmentExpression(
+            '=',
+            t.memberExpression(path.node.argument, t.identifier('restore')),
+            state[path.node.argument.name + '_restore']
           )
         ));
       }
