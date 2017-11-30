@@ -19,13 +19,11 @@ const _object2 = function (o) {
       if (_f2.o[_k4].toB) {
         _result = _f2.o[_k4].toB(b.o[_k4], t, state[_k4], begin[_k4], end[_k4], data);
       } else {
-        const _t4 = t;
-
         const _b4 = _f2.o[_k4](t, state[_k4], begin[_k4], end[_k4], data);
 
         const _e4 = b.o[_k4](t, state[_k4], begin[_k4], end[_k4], data);
 
-        _result = (_e4 - _b4) * Math.min(1, _t4) + _b4;
+        _result = (_e4 - _b4) * Math.min(1, t) + _b4;
       }
 
       state[_k4] = _result;

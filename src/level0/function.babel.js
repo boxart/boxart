@@ -286,7 +286,7 @@ export default function(babel) {
 
   const memberStore = (path, state, rhs) => {
     let stack = [];
-    let node = path.node;
+    let node = path.node || path;
     while (t.isMemberExpression(node)) {
       if (node.computed) {return;}
       if (!t.isIdentifier(node.property)) {return;}
@@ -295,6 +295,9 @@ export default function(babel) {
     }
     if (!t.isIdentifier(node)) {return;}
     let value = state[node.name];
+    if (!value) {
+      value = state[node.name] = {};
+    }
     while (value && stack.length > 0) {
       if (!value.properties) {
         value.properties = [];
@@ -311,10 +314,11 @@ export default function(babel) {
       }
       else {
         if (value.properties.find(prop => prop.key.name === name)) {
+          // console.log(`${value.properties.find(prop => prop.key.name === name).value}, ${stringifyMember(rhs)}`)
           value.properties.find(prop => prop.key.name === name).value = rhs;
           value = null;
         }
-        else {
+        else if (rhs) {
           value.properties.push(t.objectProperty(t.identifier(name), rhs));
           value = value.properties[value.properties.length - 1];
         }
@@ -365,20 +369,46 @@ export default function(babel) {
     return true;
   };
 
+  let _renameUid = 0;
   const renameAll = {
     Identifier(path, state) {
       if (
-        path.node.name.startsWith('_') &&
-        path.scope.getBinding(path.node.name) &&
-        path.scope.getBinding(path.node.name).path.node === path.node
-        // path.parent.left === path.node ||
-        // path.parent.id === path.node ||
-        // path.parentPath.isArrayPattern()
+        t.isFunction(path.parent) ||
+        t.isVariableDeclarator(path.parent) && path.parent.id === path.node ||
+        t.isArrayPattern(path.parent)
       ) {
-        path.scope.rename(path.node.name);
+        console.log(`_uid_${path.node.name.split(/^(?:_|uid_|_uid_)|\d+$/g).join('')}${_renameUid}`);
+        path.scope.rename(path.node.name, `_uid_${path.node.name.split(/^(?:_|uid_|_uid_)|\d+$/g).join('')}${_renameUid++}`);
+      }
+      if (!path.node._replaced) {
+        path.replaceWith(t.identifier(path.node.name));
+        path.node._replaced = true;
+        path.skip();
+      }
+    },
+  };
+
+  const crawlNames = {
+    Identifier(path, state) {
+      if (
+        t.isFunction(path.parent) ||
+        t.isVariableDeclarator(path.parent) && path.parent.id === path.node ||
+        t.isArrayPattern(path.parent)
+      ) {
+        state[path.node.name] = path.node.name;
       }
     }
   };
+
+  const setNames = {
+    Identifier(path, state) {
+      if (state[path.node.name]) {
+        path.node.name = state[path.node.name];
+      }
+    },
+  };
+
+  const inlineNames = {};
 
   const inlineFunctions = {
     FunctionExpression(path, state) {},
@@ -419,7 +449,11 @@ export default function(babel) {
     },
     VariableDeclarator: {
       enter(path, state) {
-        path.scope.rename(path.node.id.name);
+        if (!path.node.id.name) {return;}
+        // if (!inlineNames[path.node.id.name]) {
+          path.scope.rename(path.node.id.name);
+          inlineNames[path.node.id.name] = true;
+        // }
         if (path.getStatementParent().isLoop()) {
           state[path.node.id.name] = null;
           path.skip();
@@ -468,6 +502,11 @@ export default function(babel) {
       // enter(path, state) {
       // },
       exit(path, state) {
+        if (matchesMember(path.node.left, path.node.right)) {
+          state.__changed = (state.__changed || 0) + 1;
+          path.remove();
+          return;
+        }
         if (
           path.get('left').isIdentifier() &&
           path.getStatementParent().isLoop()
@@ -551,7 +590,8 @@ export default function(babel) {
               path.get(`body`).node.body.forEach(expr => {
                 block.push(t.cloneDeep(expr));
               });
-              // path.scope.rename(path.get(`left.declarations.0.id`).node.name);
+              // traverse(t.blockStatement(block), renameAll, path.scope);
+              path.scope.rename(path.get(`left.declarations.0.id`).node.name);
               // path.scope.rename(path.get(`left.declarations.0.id`).node.name);
             });
             // path.getStatementParent().insertBefore(t.blockStatement(block));
@@ -566,7 +606,8 @@ export default function(babel) {
             path.get('right').isArrayExpression()
           ) {
             state.__changed = (state.__changed || 0) + 1;
-            const block = [];
+            let block = [];
+            const statement = t.blockStatement(block);
             path.scope.rename(path.get(`left.declarations.0.id.elements.0`).node.name);
             path.scope.rename(path.get(`left.declarations.0.id.elements.1`).node.name);
             path.get('right').node.elements.forEach(expr => {
@@ -587,12 +628,14 @@ export default function(babel) {
               path.get(`body`).node.body.forEach(expr => {
                 block.push(t.cloneDeep(expr));
               });
+              // traverse(statement, renameAll, path.scope);
+              // block = statement.body;
               path.scope.rename(path.get(`left.declarations.0.id.elements.0`).node.name);
               path.scope.rename(path.get(`left.declarations.0.id.elements.1`).node.name);
             });
             // path.insertBefore(t.blockStatement(block));
             // path.getStatementParent().insertBefore(t.blockStatement(block));
-            block.forEach(n => path.insertBefore(n));
+            statement.body.forEach(n => path.insertBefore(n));
             path.remove();
           }
         }
@@ -724,7 +767,6 @@ export default function(babel) {
         }
         if (path.getStatementParent().isLoop()) {
           state[path.node.id.name] = null;
-          return;
         }
         if (
           path.get('init').isLiteral() ||
@@ -952,6 +994,7 @@ export default function(babel) {
             .replaceWith(t.cloneDeep(state[path.node.right.name]));
           }
           if (
+            path.get('right').isMemberExpression() ||
             path.get('right').isNumericLiteral() ||
             path.get('right').isObjectExpression() ||
             path.get('right').isArrayExpression()
@@ -967,6 +1010,67 @@ export default function(babel) {
           }
           if (!path.scope.__names.find(n => n === name)) {
             path.scope.__names.push(name);
+          }
+        }
+
+        if (t.isIdentifier(path.node.left)) {
+          if (
+            t.isIdentifier(path.node.right) ||
+            t.isMemberExpression(path.node.right)
+          ) {
+            state.__assignedMembers = state.__assignedMembers || new Map();
+            for (const [key, _path] of state.__assignedMembers.entries()) {
+              // _path && console.log(`${stringifyMember(path.node.left)}: ${stringifyMember(key)} ${_path ? _path.node.type : 'null'} [${matchesMember(key, path.node.left)}, ${matchesMember(key, path.node.left, true)}, ${_path && matchesMember(_path.node.right, path.node.left)}, ${_path && matchesMember(_path.node.right, path.node.left, true)}]`);
+              if (
+                _path &&
+                (
+                  matchesMember(key, path.node.left, true) ||
+                  matchesMember(key, path.node.left) ||
+                  matchesMember(_path.node.right, path.node.left, true) ||
+                  matchesMember(_path.node.right, path.node.left)
+                )
+              ) {
+                // console.log(`unset id assign ${stringifyMember(key)}`);
+                state.__assignedMembers.set(key, null);
+              }
+            }
+          }
+        }
+        if (t.isMemberExpression(path.node.left)) {
+          if (
+            t.isIdentifier(path.node.right) ||
+            t.isMemberExpression(path.node.right)
+          ) {
+            state.__assignedMembers = state.__assignedMembers || new Map();
+            for (const [key, _path] of state.__assignedMembers.entries()) {
+              // _path && console.log(`${stringifyMember(path.node.left)}: ${stringifyMember(key)} ${_path ? _path.node.type : 'null'} [${matchesMember(key, path.node.left)}, ${matchesMember(key, path.node.left, true)}, ${_path && matchesMember(_path.node.right, path.node.left)}, ${_path && matchesMember(_path.node.right, path.node.left, true)}]`);
+              if (
+                _path &&
+                (
+                  matchesMember(key, path.node.left, true) ||
+                  matchesMember(key, path.node.left) ||
+                  matchesMember(_path.node.right, path.node.left, true) ||
+                  matchesMember(_path.node.right, path.node.left)
+                )
+              ) {
+                if (matchesMember(key, path.node.left)) {
+                  // console.log(`remove ${stringifyMember(key)} = ${stringifyMember(_path.node.right)} ${_path.getPathLocation()} ${_path.key}`);
+                  // _path.remove();
+                  // path.findParent(t.isProgram).get(_path.getPathLocation().split('.').slice(1).join('.')).remove();
+                  state.__changed = (state.__changed || 0) + 1;
+                  traverse.NodePath.get(_path).remove();
+                }
+                // console.log(`unset member assign ${stringifyMember(key)} ${stringifyMember(path.node.left)}`);
+                state.__assignedMembers.set(key, null);
+              }
+            }
+            state.__assignedMembers.set(path.node.left, path);
+            // memberStore(path.node.left, state, path.node.right);
+          }
+          else {
+            state.__assignedMembers = state.__assignedMembers || new Map();
+            state.__assignedMembers.set(path.node.left, null);
+            // memberStore(path.node.left, state, null);
           }
         }
       }
@@ -1074,12 +1178,29 @@ export default function(babel) {
         let value = memberLookup(path, state);
         if (
           t.isLiteral(value) ||
-          t.isIdentifier(value)
-          // t.isMemberExpression(value) ||
+          t.isIdentifier(value) ||
+          t.isMemberExpression(value)
           // t.isFunctionExpression(value)
         ) {
           state.__changed = (state.__changed || 0) + 1;
           path.replaceWith(t.cloneDeep(value));
+        }
+
+        state.__assignedMembers = state.__assignedMembers || new Map();
+        for (const [key, _path] of state.__assignedMembers.entries()) {
+          // _path && console.log(`${stringifyMember(path.node)}: ${stringifyMember(key)} ${_path ? _path.node.type : 'null'} [${matchesMember(key, path.node)}, ${matchesMember(key, path.node, true)}, ${_path && matchesMember(_path.node.right, path.node)}, ${_path && matchesMember(_path.node.right, path.node, true)}]`);
+          if (
+            _path &&
+            (
+              matchesMember(key, path.node, true) ||
+              matchesMember(key, path.node) ||
+              matchesMember(_path.node.right, path.node, true) ||
+              matchesMember(_path.node.right, path.node)
+            )
+          ) {
+            // console.log(`unset member ref ${stringifyMember(key)}`);
+            state.__assignedMembers.set(key, null);
+          }
         }
       },
     },
@@ -1097,7 +1218,8 @@ export default function(babel) {
           path.parent.property !== path.node ||
           path.parent.property === path.node &&
           path.parent.computed
-        )
+        ) &&
+        path.parent.key !== path.node
       ) {
         if (
           t.isFunctionExpression(state[path.node.name]) &&
@@ -1134,6 +1256,33 @@ export default function(babel) {
         ) {
           state.__changed = (state.__changed || 0) + 1;
           path.replaceWith(t.cloneDeep(state[path.node.name]));
+        }
+        else if (
+          memberLookup(path.node, state) &&
+          (
+            t.isIdentifier(memberLookup(path.node, state)) ||
+            t.isMemberExpression(memberLookup(path.node, state))
+          )
+        ) {
+          state.__changed = (state.__changed || 0) + 1;
+          path.replaceWith(t.cloneDeep(memberLookup(path.node, state)));
+        }
+
+        state.__assignedMembers = state.__assignedMembers || new Map();
+        for (const [key, _path] of state.__assignedMembers.entries()) {
+          // _path && console.log(`${stringifyMember(path.node)}: ${stringifyMember(key)} ${_path ? _path.node.type : 'null'} [${matchesMember(key, path.node)}, ${matchesMember(key, path.node, true)}, ${_path && matchesMember(_path.node.right, path.node)}, ${_path && matchesMember(_path.node.right, path.node, true)}]`);
+          if (
+            _path &&
+            (
+              matchesMember(key, path.node, true) ||
+              matchesMember(key, path.node) ||
+              matchesMember(_path.node.right, path.node, true) ||
+              matchesMember(_path.node.right, path.node)
+            )
+          ) {
+            // console.log(`unset id ref ${stringifyMember(key)}`);
+            state.__assignedMembers.set(key, null);
+          }
         }
       }
     },
@@ -1950,36 +2099,71 @@ export default function(babel) {
     visitor: {
       Program(path) {
         let n = 10;
+        let n2 = 10;
+
+        // path.traverse(renameAll);
 
         path.traverse(copyGen, {});
         // return;
 
         let changed = 1;
-        while (n-- && changed) {
-          changed = 0;
-          let state = {};
-          path.traverse(inlineFunctions, state);
-          changed += state.__changed || 0;
-          state = {};
-          path.traverse(lookupAndOps, state);
-          changed += state.__changed || 0;
-        }
-        // return;
-
-        let refs = {};
-        path.traverse(refCount, refs);
-        let lastRefs = refs;
         let removed = Infinity;
-        while (removed > 0) {
-          removed = 0;
-          refs = {};
-          path.traverse(deadCode, lastRefs);
-          path.traverse(refCount, refs);
-          if (Object.keys(refs).length < Object.keys(lastRefs).length) {
-            removed = 1;
+        let grossRemoved = 0;
+        do {
+          n = 10;
+          changed = 1;
+          while (n-- && changed) {
+            changed = 0;
+            let state = {};
+            path.traverse(inlineFunctions, state);
+            changed += state.__changed || 0;
+            state = {};
+            path.traverse(lookupAndOps, state);
+            changed += state.__changed || 0;
           }
-          lastRefs = refs;
-        }
+          // return;
+
+          let refs = {};
+          path.traverse(refCount, refs);
+          let lastRefs = refs;
+          grossRemoved = 0;
+          removed = Infinity;
+          while (removed > 0) {
+            removed = 0;
+            refs = {};
+            path.traverse(deadCode, lastRefs);
+            path.traverse(refCount, refs);
+            if (Object.keys(refs).length < Object.keys(lastRefs).length) {
+              removed = 1;
+            }
+            lastRefs = refs;
+
+            grossRemoved += removed;
+          }
+        } while (n2-- && grossRemoved > 0);
+        // console.log(n, n2, changed, removed, grossRemoved);
+
+        path.traverse({
+          ['Program|Function'](path) {
+            const names = {};
+            path.traverse(crawlNames, names);
+            const newNames = {};
+            const reverseNames = {};
+            for (const key in names) {
+              const reverse = key.split(/^_|\d+$/).join('');
+              reverseNames[reverse] = reverseNames[reverse] || [];
+              newNames[key] = `${
+                reverseNames[reverse].length ? '_' : ''
+              }${
+                reverse
+              }${
+                reverseNames[reverse].length ? reverseNames[reverse].length : ''
+              }`;
+              reverseNames[reverse].push(key);
+            }
+            path.traverse(setNames, newNames);
+          },
+        });
 
         path.skip();
       },

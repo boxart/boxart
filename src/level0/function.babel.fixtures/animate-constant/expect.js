@@ -4,11 +4,9 @@ const _constant2 = function (c) {
   };
 
   _f2.toB = function (b, t, state) {
-    const _t6 = t;
-
     const _e3 = b(t, state);
 
-    return (_e3 - c) * Math.min(1, _t6) + c;
+    return (_e3 - c) * Math.min(1, t) + c;
   };
 
   _f2.done = function (t) {

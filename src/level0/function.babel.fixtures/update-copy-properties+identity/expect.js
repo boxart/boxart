@@ -9,8 +9,6 @@ function abProperties() {
 
   _f3.copy = function (dest, src) {
     dest = dest || {};
-    dest.a = dest.a;
-    dest.b = dest.b;
     return dest;
   };
 
