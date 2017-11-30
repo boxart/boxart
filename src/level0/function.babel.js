@@ -136,6 +136,21 @@
 export default function(babel) {
   const { types: t, traverse } = babel;
 
+  function stringifyMember(node) {
+    if (t.isIdentifier(node)) {
+      return node.name;
+    }
+    else if (t.isMemberExpression(node)) {
+      if (t.computed) {
+        return `${stringifyMember(node.object)}[${stringifyMember(node.property)}]`;
+      }
+      else {
+        return `${stringifyMember(node.object)}.${stringifyMember(node.property)}`;
+      }
+    }
+    return '';
+  }
+
   function logString(path, str) {
     path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(str)));
   }
@@ -145,6 +160,9 @@ export default function(babel) {
       return true;
     }
     else if (t.isIdentifier(node) && isStatic(state[node.name], state)) {
+      return true;
+    }
+    else if (t.isMemberExpression(node) && isStatic(memberLookup(node, state), state)) {
       return true;
     }
     else if (t.isArrayExpression(node)) {
@@ -221,7 +239,7 @@ export default function(babel) {
 
   const memberLookup = (path, state) => {
     let stack = [];
-    let node = path.node;
+    let node = path.node || path;
     while (t.isMemberExpression(node)) {
       if (node.computed) {
         if (!t.isIdentifier(node.property)) {return;}
@@ -305,19 +323,43 @@ export default function(babel) {
   };
 
   const matchesMember = function(a, b, partial) {
-    if (t.isMemberExpression(a) && t.isMemberExpression(b)) {
-      return (
-        (
-          partial ||
-          (a.computed === b.computed && matchesMember(a.property, b.property))
-        ) &&
-        matchesMember(a.object, b.object)
-      );
+    const aList = [];
+    const bList = [];
+
+    let _a = a;
+    while (t.isMemberExpression(_a)) {
+      aList.unshift(_a);
+      _a = _a.object;
     }
-    else if (t.isIdentifier(a) && t.isIdentifier(b)) {
-      return a.name === b.name;
+
+    let _b = b;
+    while (t.isMemberExpression(_b)) {
+      bList.unshift(_b);
+      _b = _b.object;
     }
-    return false;
+
+    if (!t.isIdentifier(_a) || !t.isIdentifier(_b)) {
+      return false;
+    }
+    else if (_a.name !== _b.name) {
+      return false;
+    }
+
+    if (!partial && aList.length !== bList.length) {
+      return false;
+    }
+
+    const length = Math.min(aList.length, bList.length);
+    for (let i = 0; i < length; i++) {
+      if (
+        aList[i].computed !== bList[i].computed ||
+        !matchesMember(aList[i].property, bList[i].property)
+      ) {
+        return false;
+      }
+    }
+
+    return true;
   };
 
   const renameAll = {
@@ -653,6 +695,8 @@ export default function(babel) {
           path.node.arguments.forEach(arg => {
             for (const key in state) {
               if (matchesMember(state[key], arg, true)) {
+                // console.log(`${stringifyMember(state[key])}, ${stringifyMember(arg)}`);
+                // logString(path, String(t.isIdentifier(arg) && arg.name));
                 state[key] = null;
               }
             }
@@ -789,15 +833,6 @@ export default function(babel) {
             state.__changed = (state.__changed || 0) + 1;
             path.replaceWith(t.cloneDeep(id));
           }
-          if (path.isCallExpression()) {
-            path.node.arguments.forEach(arg => {
-              for (const key in state) {
-                if (matchesMember(state[key], arg, true)) {
-                  state[key] = null;
-                }
-              }
-            });
-          }
         }
         if (
           path.isCallExpression() &&
@@ -843,6 +878,15 @@ export default function(babel) {
             path.replaceWith(t.cloneDeep(id));
           }
         }
+        if (path.isCallExpression()) {
+          path.node.arguments.forEach(arg => {
+            for (const key in state) {
+              if (matchesMember(state[key], arg, true)) {
+                state[key] = null;
+              }
+            }
+          });
+        }
       },
     },
     AssignmentExpression: {
@@ -886,8 +930,8 @@ export default function(babel) {
         if (
           path.get('right').isIdentifier() &&
           (
-            t.isIdentifier(state[path.node.right.name])
-            // t.isMemberExpression(state[path.node.right.name])
+            t.isIdentifier(state[path.node.right.name]) ||
+            t.isMemberExpression(state[path.node.right.name])
           )
         ) {
           state.__changed = (state.__changed || 0) + 1;
@@ -1075,6 +1119,16 @@ export default function(babel) {
           return;
         }
         if (state[path.node.name] && isStatic(state[path.node.name], state)) {
+          state.__changed = (state.__changed || 0) + 1;
+          path.replaceWith(t.cloneDeep(state[path.node.name]));
+        }
+        if (
+          state[path.node.name] &&
+          (
+            t.isIdentifier(state[path.node.name]) ||
+            t.isMemberExpression(state[path.node.name])
+          )
+        ) {
           state.__changed = (state.__changed || 0) + 1;
           path.replaceWith(t.cloneDeep(state[path.node.name]));
         }

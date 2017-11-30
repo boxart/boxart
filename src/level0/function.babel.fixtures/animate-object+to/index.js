@@ -17,17 +17,23 @@ function objectTo() {
   };
 
   const object = function (o) {
-    let f = function(t, state, begin, end, data) {
+    const f = function(t, state, begin, end, data) {
+      const stateParent = data.stateParent;
+      data.stateParent = state;
       for (const [k, v] of Object.entries(o)) {
         state[k] = v(t, state[k], begin[k], end[k], data);
       }
+      data.stateParent = stateParent;
       return state;
     };
     f.o = o;
     f.toB = function(b, t, state, begin, end, data) {
+      const stateParent = data.stateParent;
+      data.stateParent = state;
       for (const [k, v] of Object.entries(o)) {
         state[k] = v.toB(b.o[k], t, state[k], begin[k], end[k], data);
       }
+      data.stateParent = stateParent;
       return state;
     };
     f.done = function (t) {

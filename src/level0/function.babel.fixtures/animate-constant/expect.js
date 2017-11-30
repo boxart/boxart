@@ -5,15 +5,14 @@ const _constant2 = function (c) {
 
   _f2.toB = function (b, t, state) {
     const _t6 = t;
-    const _b3 = c;
 
     const _e3 = b(t, state);
 
-    return (_e3 - _b3) * Math.min(1, _t6) + _b3;
+    return (_e3 - c) * Math.min(1, _t6) + c;
   };
 
   _f2.done = function (t) {
-    return t >= 1;
+    return (c.done ? c.done(t, state) : true) && t >= 1;
   };
 
   return _f2;

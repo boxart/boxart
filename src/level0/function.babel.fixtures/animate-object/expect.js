@@ -14,10 +14,10 @@ const _object2 = function (o) {
 
   _f2.toB = function (b, t, state, begin, end, data) {
     data.stateParent = state;data.beginParent = begin;data.endParent = end;for (const _k4 of __Object_keys_o) {
-      let _result2;
+      let _result;
 
       if (_f2.o[_k4].toB) {
-        _result2 = _f2.o[_k4].toB(b.o[_k4], t, state[_k4], begin[_k4], end[_k4], data);
+        _result = _f2.o[_k4].toB(b.o[_k4], t, state[_k4], begin[_k4], end[_k4], data);
       } else {
         const _t4 = t;
 
@@ -25,15 +25,15 @@ const _object2 = function (o) {
 
         const _e4 = b.o[_k4](t, state[_k4], begin[_k4], end[_k4], data);
 
-        _result2 = (_e4 - _b4) * Math.min(1, _t4) + _b4;
+        _result = (_e4 - _b4) * Math.min(1, _t4) + _b4;
       }
 
-      state[_k4] = _result2;
+      state[_k4] = _result;
     }return state;
   };
 
   _f2.done = function (t) {
-    return t >= 1;
+    return (o.done ? o.done(t, state, begin, end, data) : true) && t >= 1;
   };
 
   return _f2;
