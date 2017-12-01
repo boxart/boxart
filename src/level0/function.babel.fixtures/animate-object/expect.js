@@ -19,10 +19,12 @@ const _object3 = function (o) {
       if (f.o[k].toB) {
         result = f.o[k].toB(b.o[k], t, state[k], begin[k], end[k], data);
       } else {
+        const _t1 = t;
+
         const _b1 = f.o[k](t, state[k], begin[k], end[k], data);
 
         const e = b.o[k](t, state[k], begin[k], end[k], data);
-        result = (e - _b1) * Math.min(1, t) + _b1;
+        result = (e - _b1) * Math.min(1, _t1) + _b1;
       }
 
       state[k] = result;

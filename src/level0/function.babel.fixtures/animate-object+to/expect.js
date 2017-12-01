@@ -1,11 +1,9 @@
 function objectTo() {
-  const c = 0;
-
   const f = function (t, state, begin, end, data) {
     return (1 - 0) * Math.min(1, t) + 0;
   };
   f.done = function (t, state, begin, end, data) {
-    return (c.done ? c.done(t, state, begin, end, data) : true) && t >= 1;
+    return true && t >= 1;
   };
 
   f.toB = function (b, t, state, begin, end, data) {
@@ -13,11 +11,10 @@ function objectTo() {
     return (e - 0) * Math.min(1, t) + 0;
   };
 
-  const _c1 = 1;
   const _f1 = function (t, state, begin, end, data) {
     return (2 - 1) * Math.min(1, t) + 1;
   };_f1.done = function (t, state, begin, end, data) {
-    return (_c1.done ? _c1.done(t, state, begin, end, data) : true) && t >= 1;
+    return true && t >= 1;
   };
   _f1.toB = function (b, t, state, begin, end, data) {
     const e = b(t, state, begin, end, data);

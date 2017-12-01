@@ -1130,7 +1130,10 @@ export default function(babel) {
       if (
         (
           !path.findParent(n => t.isLoop(n)) ||
-          path.findParent(t.isForOfStatement).node.right === path.node
+          path.findParent(t.isForOfStatement) &&
+          path.find(p => (
+            t.isForOfStatement(p.parent) && p.node === p.parent.right
+          ))
         ) &&
         path.parent.id !== path.node &&
         (
@@ -1195,7 +1198,30 @@ export default function(babel) {
           // console.log(`replace ${stringifyMember(path.node)} ${memberLookup(path.node, state).type}`);
           path.replaceWith(t.cloneDeep(memberLookup(path.node, state)));
         }
+      }
 
+      if (
+        // (
+        //   !path.findParent(n => t.isLoop(n)) ||
+        //   path.findParent(t.isForOfStatement) &&
+        //   path.find(p => (
+        //     t.isForOfStatement(p.parent) && p.node === p.parent.right
+        //   ))
+        // ) &&
+        path.parent.id !== path.node &&
+        (
+          path.parentPath.isAssignmentExpression() &&
+          path.parent.left !== path.node ||
+          !path.parentPath.isAssignmentExpression()
+        ) &&
+        path.parent.object !== path.node &&
+        (
+          path.parent.property !== path.node ||
+          path.parent.property === path.node &&
+          path.parent.computed
+        ) &&
+        path.parent.key !== path.node
+      ) {
         state.__assignedMembers = state.__assignedMembers || new Map();
         for (const [key, _path] of state.__assignedMembers.entries()) {
           // _path && console.log(`${stringifyMember(path.node)}: ${stringifyMember(key)} ${_path ? _path.node.type : 'null'} [${matchesMember(key, path.node)}, ${matchesMember(key, path.node, true)}, ${_path && matchesMember(_path.node.right, path.node)}, ${_path && matchesMember(_path.node.right, path.node, true)}]`);
@@ -1275,6 +1301,19 @@ export default function(babel) {
           // path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(path.node.name)));
           state[path.node.name] = {node: path.node, refs: [], refsFrom: []};
         }
+      }
+      // for (const ... of id)
+      if (
+        path.findParent(t.isForOfStatement) &&
+        path.find(p => (
+          t.isForOfStatement(p.parent) && p.node === p.parent.right
+        ))
+      ) {
+        const id = path.node.name;
+        if (!(state[id] || {}).node) {
+          state[id] = {node: path.node, refs: [], refsFrom: []};
+        }
+        state[id].refsFrom.push('__for_of_statement__');
       }
       // id = ...
       if (
