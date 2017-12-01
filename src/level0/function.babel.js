@@ -1,137 +1,5 @@
-// function gen() {
-//   return (function(fn) {
-//     const f = function(t, state, begin, end) {
-//       var b = {b: 1};
-//       var c = {f2: function(t) {return t;}};
-//       state.left = c.f2(b.b, state, begin, end) * 2;
-//       return state;
-//     };
-//     return f;
-//   })((function(fn) {
-//     const f = function(t) {return fn(t * 2) * 2;};
-//     return f;
-//   })((function(fn) {
-//     const f = function(t) {return fn(t * 2) * 2;};
-//     return f;
-//   })((function(fn) {
-//     const f = function(t) {return fn(t * 2) * 2;};
-//     return f;
-//   })((function(c) {
-//     const f = function(t) {return t * c;};
-//     return f;
-//   })(3)))));
-// }
-
-// function gen3() {
-//   return (function(obj) {
-//     const f = function(element, state) {
-//       state = state || {};
-//       state.ary = state.ary || [];
-//       state.ary[0] = {};
-//       for (const [k, v] of Object.entries(obj)) {
-//         state[k] = v(element[k], state, {});
-//       }
-//       return state;
-//     };
-//     return f;
-//   })(function() {
-//       const g = (function() {
-//         const f = function(element, state) {
-//           return element;
-//         };
-//         return f;
-//       })();
-//     return {
-//       a: g,
-//     b: (function() {
-//         const f = function(element, state) {
-//           return element;
-//         };
-//         return f;
-//       })(),
-//     };
-//   }());
-// }
-//
-// function gen2() {
-//   return (function(fn) {
-//     const f = function(element, state, animated) {
-//       state = state || {};
-//       for (const k of ['a', 'b', 'c']) {
-//       state[k] = fn(element, state[k], animated);
-//       }
-//       return state;
-//     };
-//     return f;
-//   })((function() {
-//     const f = function(element, state, animated) {
-//       state = state || {};
-//       state.b = 1;
-//       return state;
-//     };
-//     return f;
-//   })());
-// }
-//
-// function gen() {
-//   return (function(fn) {
-//   const f = function(t, state, begin, end) {
-//       state = state || {};
-//       let b = 0;
-//       // comment
-//       let a = 2;
-//       let d = [a];
-//       let e = {a: 1};
-//       while (0) {
-//         for (const j of ['d', 'e']) {
-//           for (const k of ['f', 'g']) {
-//           state[j][k] = end[j][k] ;
-//           }
-//         }
-//       }
-//       for (const m of [function() {return 1;}, function() {return 2;}]) {
-//         b = m();
-//       }
-//       let i;
-//       for (const [n, o] of Object.entries({p: ['q', 'r'], q: ['r', 's']})) {
-//         i = 1;
-//         for (const p of o) {
-//           i = i + 2;
-//           state[n][i] = p;
-//         }
-//       }
-//       for (const c of ['a', 'b']) {
-//         state[c] = (end[c] - begin[c]) * t + begin[c];
-//       }
-//       if (0) {
-//     b = 1;
-//       }
-//       else if (0) {
-//         b = 2;
-//       }
-//       else if (0) {
-//         b = 3;
-//       }
-//       a = b;
-//       return 'translate(' + fn.fn(a) + ',' + 0 + 'px' + ')';
-//     };
-//     return f;
-//   })((function() {
-//     const f = function() {return 1;};
-//     f.fn = function(t) {
-//       return t * 2;
-//     };
-//     return f;
-//   })());
-//   const f = function(t, state, begin, end) {
-//     let b = begin.left;
-//     let e = end.left;
-//     state.left = (e - b) * t + b;
-//     return state;
-//   };
-//   f.eq = function(t) {return t >= 1;}
-//   return f;
-// }
+const OUTER_ITERATIONS = 100;
+const INNER_ITERATIONS = 100;
 
 export default function(babel) {
   const { types: t, traverse } = babel;
@@ -139,6 +7,9 @@ export default function(babel) {
   function stringifyMember(node) {
     if (t.isIdentifier(node)) {
       return node.name;
+    }
+    else if (t.isLiteral(node)) {
+      return node.value;
     }
     else if (t.isMemberExpression(node)) {
       if (t.computed) {
@@ -199,6 +70,9 @@ export default function(babel) {
     else if (path.isIdentifier() && isStatic(state[path.node.name], state)) {
       return true;
     }
+    else if (path.isMemberExpression() && isStatic(memberLookup(path.node, state), state)) {
+      return true;
+    }
     else if (path.isArrayExpression()) {
       const length = path.node.elements.length;
       for (let i = 0; i < length; i++) {
@@ -242,9 +116,16 @@ export default function(babel) {
     let node = path.node || path;
     while (t.isMemberExpression(node)) {
       if (node.computed) {
-        if (!t.isIdentifier(node.property)) {return;}
-        if (!t.isLiteral(state[node.property.name])) {return;}
-        stack.unshift(state[node.property.name].value);
+        if (t.isIdentifier(node.property)) {
+          if (!t.isLiteral(state[node.property.name])) {return;}
+          stack.unshift(state[node.property.name].value);
+        }
+        else if (t.isLiteral(node.property)) {
+          stack.unshift(node.property.value);
+        }
+        else {
+          return;
+        }
       }
       else {
         if (!t.isIdentifier(node.property)) {return;}
@@ -254,11 +135,16 @@ export default function(babel) {
     }
     if (!t.isIdentifier(node)) {return;}
     let value = state[node.name];
-    // logString(path, JSON.stringify([node.name].concat(stack)));
+    // console.log(JSON.stringify([node.name].concat(stack)));
     // logString(path, JSON.stringify([node.name, value]));
-    while (value && value.properties && stack.length > 0) {
+    while (value && (value.properties || value.elements) && stack.length > 0) {
       const name = stack.shift();
-      value = value.properties.find(prop => prop.key.name === name);
+      if (value.properties) {
+        value = value.properties.find(prop => prop.key.name === name);
+      }
+      else if (value.elements) {
+        value = value.elements[Number(name)];
+      }
       // logString(path, JSON.stringify([name, value && value.type]));
       if (t.isObjectProperty(value)) {
         value = value.value;
@@ -278,8 +164,10 @@ export default function(babel) {
       t.isLiteral(value) ||
       t.isIdentifier(value) ||
       // t.isMemberExpression(value) ||
+      // t.isArrayExpression(value) ||
       t.isFunctionExpression(value)
     ) {
+      // console.log(`replace ${stringifyMember(path.node)} ${value.type}`);
       path.replaceWith(t.cloneDeep(value));
     }
   };
@@ -377,7 +265,7 @@ export default function(babel) {
         t.isVariableDeclarator(path.parent) && path.parent.id === path.node ||
         t.isArrayPattern(path.parent)
       ) {
-        console.log(`_uid_${path.node.name.split(/^(?:_|uid_|_uid_)|\d+$/g).join('')}${_renameUid}`);
+        // console.log(`_uid_${path.node.name.split(/^(?:_|uid_|_uid_)|\d+$/g).join('')}${_renameUid}`);
         path.scope.rename(path.node.name, `_uid_${path.node.name.split(/^(?:_|uid_|_uid_)|\d+$/g).join('')}${_renameUid++}`);
       }
       if (!path.node._replaced) {
@@ -444,6 +332,7 @@ export default function(babel) {
               state[name] = null;
             }
           }
+          path.scope.__names = [];
         }
       },
     },
@@ -470,6 +359,7 @@ export default function(babel) {
           t.isLiteral(state[path.node.init.name])
         ) {
           state.__changed = (state.__changed || 0) + 1;
+          // console.log(`replace ${stringifyMember(path.node.init.name)} ${state[path.node.init.name].type}`);
           path.get('init').replaceWith(t.cloneDeep(state[path.node.init.name]));
         }
         if (
@@ -533,6 +423,7 @@ export default function(babel) {
             t.isLiteral(state[path.node.right.name])
           ) {
             state.__changed = (state.__changed || 0) + 1;
+            // console.log(`replace ${path.node.right.name} ${state[path.node.right.name].type}`);
             path.get('right')
             .replaceWith(t.cloneDeep(state[path.node.right.name]));
           }
@@ -540,7 +431,7 @@ export default function(babel) {
             state[name] = path.node.right;
           }
           else if (
-            path.get('right').isNumericLiteral() ||
+            path.get('right').isLiteral() ||
             path.get('right').isObjectExpression() ||
             path.get('right').isArrayExpression()
           ) {
@@ -562,10 +453,21 @@ export default function(babel) {
     ForStatement: {},
     ForOfStatement: {
       enter(path, state) {
-        if (memberLookup(path.get('right'), state)) {
-          state.__changed = (state.__changed || 0) + 1;
-          memberReplace(path.get('right'), state);
+        const value = memberLookup(path.get('right'), state);
+        if (
+          t.isIdentifier(value) ||
+          t.isMemberExpression(value) ||
+          t.isFunctionExpression(value) ||
+          t.isArrayExpression(value)
+        ) {
+          state.__changed = (state.__changed || 0) + 
+          // console.log(`replace ${stringifyMember(path.node.right)} ${value.type}`);
+          path.get('right').replaceWith(t.cloneDeep(value));
         }
+        // if (value) {
+        //   state.__changed = (state.__changed || 0) + 1;
+        //   memberReplace(path.get('right'), state);
+        // }
       },
       exit(path, state) {
         if (isStaticPath(path.get('right'), state)) {
@@ -596,8 +498,9 @@ export default function(babel) {
             });
             // path.getStatementParent().insertBefore(t.blockStatement(block));
             // path.scope.rename(path.get(`left.declarations.0.id`).node.name, '_' + Math.random().toString(16).substring(2));
-            // block.forEach(n => path.insertBefore(n));
-            path.replaceWith(t.blockStatement(block));
+            block.forEach(n => path.insertBefore(n));
+            path.remove();
+            // path.replaceWith(t.blockStatement(block));
           }
           if (
             path.isForOfStatement() &&
@@ -667,6 +570,10 @@ export default function(babel) {
           (
             t.isIdentifier(path.node.test.object) &&
             t.isFunctionExpression(state[path.node.test.object.name]) ||
+            t.isIdentifier(path.node.test.object) &&
+            t.isLiteral(state[path.node.test.object.name]) ||
+            t.isIdentifier(path.node.test.object) &&
+            t.isArrayExpression(state[path.node.test.object.name]) ||
             t.isMemberExpression(path.node.test.object) &&
             t.isIdentifier(path.node.test.object.object) &&
             t.isFunctionExpression(state[path.node.test.object.object.name])
@@ -763,11 +670,18 @@ export default function(babel) {
           )
         ) {
           state.__changed = (state.__changed || 0) + 1;
+          // console.log(`replace ${path.node.init.name} ${state[path.node.init.name].type}`);
           path.get('init').replaceWith(t.cloneDeep(state[path.node.init.name]));
         }
         if (path.getStatementParent().isLoop()) {
           state[path.node.id.name] = null;
         }
+        // if (
+        //   path.parentPath.parentPath.isForStatement() &&
+        //   path.parentPath.parent.init === path.parent
+        // ) {
+        //   return;
+        // }
         if (
           path.get('init').isLiteral() ||
           path.get('init').isObjectExpression() ||
@@ -965,7 +879,7 @@ export default function(babel) {
           path.getStatementParent().isLoop()
         ) {
           state[path.node.id.name] = null;
-          return;
+          // return;
         }
         for (const key in state) {
           if (matchesMember(path.node.left, state[key])) {
@@ -980,6 +894,7 @@ export default function(babel) {
           )
         ) {
           state.__changed = (state.__changed || 0) + 1;
+          // console.log(`replace ${stringifyMember(path.node.right.name)} ${state[path.node.right.name].type}`);
           path.get('right')
           .replaceWith(t.cloneDeep(state[path.node.right.name]));
         }
@@ -990,15 +905,17 @@ export default function(babel) {
             t.isLiteral(state[path.node.right.name])
           ) {
             state.__changed = (state.__changed || 0) + 1;
+            // console.log(`replace ${stringifyMember(path.node.right.name)} ${state[path.node.right.name].type}`);
             path.get('right')
             .replaceWith(t.cloneDeep(state[path.node.right.name]));
           }
           if (
+            path.get('right').isLiteral() ||
             path.get('right').isMemberExpression() ||
-            path.get('right').isNumericLiteral() ||
             path.get('right').isObjectExpression() ||
             path.get('right').isArrayExpression()
           ) {
+            // console.log(`${name} ${JSON.stringify(path.get('right').node)}`);
             state[name] = path.node.right;
           }
           else {
@@ -1120,6 +1037,7 @@ export default function(babel) {
               state[name] = null;
             }
           }
+          path.scope.__names = [];
         }
       },
     },
@@ -1183,6 +1101,7 @@ export default function(babel) {
           // t.isFunctionExpression(value)
         ) {
           state.__changed = (state.__changed || 0) + 1;
+          // console.log(`replace ${path.node.name}, ${value.type}`);
           path.replaceWith(t.cloneDeep(value));
         }
 
@@ -1205,8 +1124,14 @@ export default function(babel) {
       },
     },
     Identifier(path, state) {
+      // if (path.findParent(t.isLoop)) {
+      //   return;
+      // }
       if (
-        // !path.findParent(n => t.isLoop(n)) &&
+        (
+          !path.findParent(n => t.isLoop(n)) ||
+          path.findParent(t.isForOfStatement).node.right === path.node
+        ) &&
         path.parent.id !== path.node &&
         (
           path.parentPath.isAssignmentExpression() &&
@@ -1245,6 +1170,7 @@ export default function(babel) {
         }
         if (state[path.node.name] && isStatic(state[path.node.name], state)) {
           state.__changed = (state.__changed || 0) + 1;
+          // console.log(`replace(static) ${path.node.name}, ${state[path.node.name].type}`);
           path.replaceWith(t.cloneDeep(state[path.node.name]));
         }
         if (
@@ -1255,6 +1181,7 @@ export default function(babel) {
           )
         ) {
           state.__changed = (state.__changed || 0) + 1;
+          // console.log(`replace ${path.node.name} ${state[path.node.name].type}`);
           path.replaceWith(t.cloneDeep(state[path.node.name]));
         }
         else if (
@@ -1265,6 +1192,7 @@ export default function(babel) {
           )
         ) {
           state.__changed = (state.__changed || 0) + 1;
+          // console.log(`replace ${stringifyMember(path.node)} ${memberLookup(path.node, state).type}`);
           path.replaceWith(t.cloneDeep(memberLookup(path.node, state)));
         }
 
@@ -1296,6 +1224,7 @@ export default function(babel) {
           (path.node.operator === '*' || path.node.operator === '+')
         ) {
           const e = path.evaluate();
+          // e.confident && console.log(`replace ${path.node.left.value} ${path.node.operator} ${path.node.right.value} ${e.value}`);
           if (e.confident && typeof e.value === 'number') {
             state.__changed = (state.__changed || 0) + 1;
             path.replaceWith(t.numericLiteral(e.value));
@@ -1307,21 +1236,28 @@ export default function(babel) {
         }
         if (
           path.get('left').isBinaryExpression() &&
-          path.node.left.operator === '*' && path.node.operator === '*' &&
-          path.get('left.right').isLiteral() && path.get('right').isLiteral()
+          path.get('left.right').isLiteral() && path.get('right').isLiteral() &&
+          (
+            path.node.left.operator === '*' && path.node.operator === '*' ||
+            path.node.left.operator === '+' && path.node.operator === '+'
+          )
         ) {
           state.__changed = (state.__changed || 0) + 1;
           path.replaceWith(
             t.binaryExpression(
-              '*',
+              path.node.left.operator,
               path.node.left.left,
-              t.binaryExpression('*', path.node.left.right, path.node.right)
+              t.binaryExpression(path.node.operator, path.node.left.right, path.node.right)
             )
           );
           const e = path.get('right').evaluate();
           if (e.confident && typeof e.value === 'number') {
             state.__changed = (state.__changed || 0) + 1;
             path.get('right').replaceWith(t.numericLiteral(e.value));
+          }
+          if (e.confident && typeof e.value === 'string') {
+            state.__changed = (state.__changed || 0) + 1;
+            path.get('right').replaceWith(t.stringLiteral(e.value));
           }
         }
       },
@@ -1333,14 +1269,25 @@ export default function(babel) {
       if (path.getStatementParent().parentPath.isProgram()) {
         return;
       }
+      // let id = ...
       if (path.parent.id === path.node) {
         if (!(state[path.node.name] || {}).node) {
           // path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(path.node.name)));
           state[path.node.name] = {node: path.node, refs: [], refsFrom: []};
         }
       }
+      // id = ...
       if (
-        path.findParent(parentPath => parentPath.isVariableDeclarator()) &&
+        t.isAssignmentExpression(path.parent) &&
+        path.parent.left === path.node
+      ) {
+        const id = path.node.name;
+        if (!(state[id] || {}).node) {
+          state[id] = {node: path.node, refs: [], refsFrom: []};
+        }
+      }
+      if (
+        path.getStatementParent().isVariableDeclaration() &&
         path.findParent(parentPath => parentPath.isVariableDeclarator())
         .node.id.name !== path.node.name
       ) {
@@ -1412,6 +1359,7 @@ export default function(babel) {
       if (
         (
           path.parent.id === path.node ||
+          t.isAssignmentExpression(path.parent) &&
           path.parent.left === path.node ||
           path.parent.object === path.node
         ) &&
@@ -2098,8 +2046,8 @@ export default function(babel) {
   return {
     visitor: {
       Program(path) {
-        let n = 10;
-        let n2 = 10;
+        let n = INNER_ITERATIONS;
+        let n2 = OUTER_ITERATIONS;
 
         // path.traverse(renameAll);
 
@@ -2110,7 +2058,7 @@ export default function(babel) {
         let removed = Infinity;
         let grossRemoved = 0;
         do {
-          n = 10;
+          n = INNER_ITERATIONS;
           changed = 1;
           while (n-- && changed) {
             changed = 0;
@@ -2122,6 +2070,7 @@ export default function(babel) {
             changed += state.__changed || 0;
           }
           // return;
+          // break;
 
           let refs = {};
           path.traverse(refCount, refs);

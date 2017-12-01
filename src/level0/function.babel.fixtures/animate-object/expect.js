@@ -1,40 +1,39 @@
-const _object2 = function (o) {
-  const __Object_keys_o = Object.keys(o);
+const _object3 = function (o) {
+  const _Object_keys_o = Object.keys(o);
 
-  const _f2 = function (t, state, begin, end, data) {
+  const f = function (t, state, begin, end, data) {
     data.stateParent = state;
     data.beginParent = begin;
     data.endParent = end;
-    for (const _k3 of __Object_keys_o) {
-      state[_k3] = _f2.o[_k3](t, state[_k3], begin[_k3], end[_k3], data);
+    for (const k of _Object_keys_o) {
+      state[k] = f.o[k](t, state[k], begin[k], end[k], data);
     }
     return state;
   };
-  _f2.o = o;
+  f.o = o;
 
-  _f2.toB = function (b, t, state, begin, end, data) {
-    data.stateParent = state;data.beginParent = begin;data.endParent = end;for (const _k4 of __Object_keys_o) {
-      let _result;
+  f.toB = function (b, t, state, begin, end, data) {
+    data.stateParent = state;data.beginParent = begin;data.endParent = end;for (const k of _Object_keys_o) {
+      let result;
 
-      if (_f2.o[_k4].toB) {
-        _result = _f2.o[_k4].toB(b.o[_k4], t, state[_k4], begin[_k4], end[_k4], data);
+      if (f.o[k].toB) {
+        result = f.o[k].toB(b.o[k], t, state[k], begin[k], end[k], data);
       } else {
-        const _b4 = _f2.o[_k4](t, state[_k4], begin[_k4], end[_k4], data);
+        const _b1 = f.o[k](t, state[k], begin[k], end[k], data);
 
-        const _e4 = b.o[_k4](t, state[_k4], begin[_k4], end[_k4], data);
-
-        _result = (_e4 - _b4) * Math.min(1, t) + _b4;
+        const e = b.o[k](t, state[k], begin[k], end[k], data);
+        result = (e - _b1) * Math.min(1, t) + _b1;
       }
 
-      state[_k4] = _result;
+      state[k] = result;
     }return state;
   };
 
-  _f2.done = function (t) {
+  f.done = function (t) {
     return (o.done ? o.done(t, state, begin, end, data) : true) && t >= 1;
   };
 
-  return _f2;
+  return f;
 };
 
-module.exports = _object2;
+module.exports = _object3;

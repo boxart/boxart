@@ -1,60 +1,57 @@
 function objectTo() {
-  const _c25 = 0;
+  const c = 0;
 
-  const _f43 = function (t, state, begin, end, data) {
+  const f = function (t, state, begin, end, data) {
     return (1 - 0) * Math.min(1, t) + 0;
   };
-  _f43.done = function (t, state, begin, end, data) {
-    return (_c25.done ? _c25.done(t, state, begin, end, data) : true) && t >= 1;
+  f.done = function (t, state, begin, end, data) {
+    return (c.done ? c.done(t, state, begin, end, data) : true) && t >= 1;
   };
 
-  _f43.toB = function (b, t, state, begin, end, data) {
-    const _e10 = b(t, state, begin, end, data);
-
-    return (_e10 - 0) * Math.min(1, t) + 0;
+  f.toB = function (b, t, state, begin, end, data) {
+    const e = b(t, state, begin, end, data);
+    return (e - 0) * Math.min(1, t) + 0;
   };
 
-  const _c26 = 1;
-  const _f44 = function (t, state, begin, end, data) {
+  const _c1 = 1;
+  const _f1 = function (t, state, begin, end, data) {
     return (2 - 1) * Math.min(1, t) + 1;
-  };_f44.done = function (t, state, begin, end, data) {
-    return (_c26.done ? _c26.done(t, state, begin, end, data) : true) && t >= 1;
+  };_f1.done = function (t, state, begin, end, data) {
+    return (_c1.done ? _c1.done(t, state, begin, end, data) : true) && t >= 1;
   };
-  _f44.toB = function (b, t, state, begin, end, data) {
-    const _e14 = b(t, state, begin, end, data);
-
-    return (_e14 - 1) * Math.min(1, t) + 1;
+  _f1.toB = function (b, t, state, begin, end, data) {
+    const e = b(t, state, begin, end, data);
+    return (e - 1) * Math.min(1, t) + 1;
   };
 
-  const _f4 = function (t, state, begin, end, data) {
+  const _f2 = function (t, state, begin, end, data) {
     state.top = (1 - 0) * Math.min(1, t) + 0;
     state.left = (2 - 1) * Math.min(1, t) + 1;
     return state;
   };
-  _f4.o = {
-    top: _f43,
-    left: _f44
+  _f2.o = {
+    top: f,
+    left: _f1
   };
-  _f4.toB = function (b, t, state, begin, end, data) {
-    const _stateParent23 = data.stateParent;
+  _f2.toB = function (b, t, state, begin, end, data) {
+    const stateParent = data.stateParent;
     data.stateParent = state;
+    const e = b.o.top(t, state.top, begin.top, end.top, data);
 
-    const _e41 = b.o.top(t, state.top, begin.top, end.top, data);
+    state.top = (e - 0) * Math.min(1, t) + 0;
 
-    state.top = (_e41 - 0) * Math.min(1, t) + 0;
+    const _e1 = b.o.left(t, state.left, begin.left, end.left, data);
 
-    const _e26 = b.o.left(t, state.left, begin.left, end.left, data);
-
-    state.left = (_e26 - 1) * Math.min(1, t) + 1;
-    data.stateParent = _stateParent23;
+    state.left = (_e1 - 1) * Math.min(1, t) + 1;
+    data.stateParent = stateParent;
     return state;
   };
-  _f4.done = function (t) {
+  _f2.done = function (t) {
     return t >= 1;
   };
 
 
-  return _f4;
+  return _f2;
 }
 
 module.exports = objectTo();

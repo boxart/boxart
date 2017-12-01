@@ -1,13 +1,13 @@
 const _identity = function () {
-  const _f = function (state, element, data) {
+  const f = function (state, element, data) {
     return element;
   };
 
-  _f.copy = function (dest, src) {
+  f.copy = function (dest, src) {
     return src;
   };
 
-  return _f;
+  return f;
 };
 
 module.exports = _identity;

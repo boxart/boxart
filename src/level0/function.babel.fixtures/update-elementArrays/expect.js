@@ -1,40 +1,40 @@
 const _elementArrays2 = function (obj) {
-  const __Object_entries_obj = Object.entries(obj);
+  const _Object_entries_obj = Object.entries(obj);
 
-  const _f2 = function (state, element, data) {
+  const f = function (state, element, data) {
     state = state || {};
-    for (const [k, v] of __Object_entries_obj) {
-      const _elements2 = element.getElementsByClassName(k);
+    for (const [k, v] of _Object_entries_obj) {
+      const elements = element.getElementsByClassName(k);
 
-      const _elementCopy2 = data.animated[k] || [];
-      const _elementState2 = state[k] || [];
-      _elementCopy2.length = _elements2.length;
-      _elementState2.length = _elements2.length;
-      for (let _i3 = 0; _i3 < _elementState2.length; _i3++) {
-        _elementCopy2[_i3] = _elements2[_i3];
-        _elementState2[_i3] = v(_elementState2[_i3], _elementCopy2[_i3], data);
+      const elementCopy = data.animated[k] || [];
+      const elementState = state[k] || [];
+      elementCopy.length = elements.length;
+      elementState.length = elements.length;
+      for (let i = 0; i < elementState.length; i++) {
+        elementCopy[i] = elements[i];
+        elementState[i] = v(elementState[i], elementCopy[i], data);
       }
-      data.animated[k] = _elementCopy2;
-      state[k] = _elementState2;
+      data.animated[k] = elementCopy;
+      state[k] = elementState;
     }
     return state;
   };
 
-  _f2.copy = function (dest, src) {
+  f.copy = function (dest, src) {
     dest = dest || {};
-    for (const [k, v] of __Object_entries_obj) {
-      const _dest2 = dest[k] || [];
+    for (const [k, v] of _Object_entries_obj) {
+      const _dest1 = dest[k] || [];
 
-      const _src2 = src[k] || [];
+      const _src1 = src[k] || [];
 
-      _dest2.length = _src2.length;
-      for (let _i4 = 0; _i4 < _src2.length; _i4++) {
-        _dest2[_i4] = v.copy ? v.copy(_dest2[_i4], _src2[_i4]) : _src2[_i4];
-      }dest[k] = _dest2;
+      _dest1.length = _src1.length;
+      for (let i = 0; i < _src1.length; i++) {
+        _dest1[i] = v.copy ? v.copy(_dest1[i], _src1[i]) : _src1[i];
+      }dest[k] = _dest1;
     }return dest;
   };
 
-  return _f2;
+  return f;
 };
 
 module.exports = _elementArrays2;
