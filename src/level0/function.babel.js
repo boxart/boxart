@@ -930,65 +930,32 @@ export default function(babel) {
           }
         }
 
-        if (t.isIdentifier(path.node.left)) {
-          if (
-            t.isIdentifier(path.node.right) ||
-            t.isMemberExpression(path.node.right)
-          ) {
-            state.__assignedMembers = state.__assignedMembers || new Map();
-            for (const [key, _path] of state.__assignedMembers.entries()) {
-              // _path && console.log(`${stringifyMember(path.node.left)}: ${stringifyMember(key)} ${_path ? _path.node.type : 'null'} [${matchesMember(key, path.node.left)}, ${matchesMember(key, path.node.left, true)}, ${_path && matchesMember(_path.node.right, path.node.left)}, ${_path && matchesMember(_path.node.right, path.node.left, true)}]`);
+        if (
+          t.isIdentifier(path.node.left) ||
+          t.isMemberExpression(path.node.left)
+        ) {
+          state.__assignedMembers = state.__assignedMembers || new Map();
+          for (const [key, _path] of state.__assignedMembers.entries()) {
+            if (
+              _path &&
+              (
+                matchesMember(key, path.node.left, true) ||
+                matchesMember(key, path.node.left) ||
+                matchesMember(_path.node.right, path.node.left, true) ||
+                matchesMember(_path.node.right, path.node.left)
+              )
+            ) {
               if (
-                _path &&
-                (
-                  matchesMember(key, path.node.left, true) ||
-                  matchesMember(key, path.node.left) ||
-                  matchesMember(_path.node.right, path.node.left, true) ||
-                  matchesMember(_path.node.right, path.node.left)
-                )
+                matchesMember(key, path.node.left) &&
+                path.findParent(t.isBlockStatement).node === traverse.NodePath.get(_path).findParent(t.isBlockStatement).node
               ) {
-                // console.log(`unset id assign ${stringifyMember(key)}`);
-                state.__assignedMembers.set(key, null);
+                state.__changed = (state.__changed || 0) + 1;
+                traverse.NodePath.get(_path).remove();
               }
+              state.__assignedMembers.set(key, null);
             }
           }
-        }
-        if (t.isMemberExpression(path.node.left)) {
-          if (
-            t.isIdentifier(path.node.right) ||
-            t.isMemberExpression(path.node.right)
-          ) {
-            state.__assignedMembers = state.__assignedMembers || new Map();
-            for (const [key, _path] of state.__assignedMembers.entries()) {
-              // _path && console.log(`${stringifyMember(path.node.left)}: ${stringifyMember(key)} ${_path ? _path.node.type : 'null'} [${matchesMember(key, path.node.left)}, ${matchesMember(key, path.node.left, true)}, ${_path && matchesMember(_path.node.right, path.node.left)}, ${_path && matchesMember(_path.node.right, path.node.left, true)}]`);
-              if (
-                _path &&
-                (
-                  matchesMember(key, path.node.left, true) ||
-                  matchesMember(key, path.node.left) ||
-                  matchesMember(_path.node.right, path.node.left, true) ||
-                  matchesMember(_path.node.right, path.node.left)
-                )
-              ) {
-                if (matchesMember(key, path.node.left)) {
-                  // console.log(`remove ${stringifyMember(key)} = ${stringifyMember(_path.node.right)} ${_path.getPathLocation()} ${_path.key}`);
-                  // _path.remove();
-                  // path.findParent(t.isProgram).get(_path.getPathLocation().split('.').slice(1).join('.')).remove();
-                  state.__changed = (state.__changed || 0) + 1;
-                  traverse.NodePath.get(_path).remove();
-                }
-                // console.log(`unset member assign ${stringifyMember(key)} ${stringifyMember(path.node.left)}`);
-                state.__assignedMembers.set(key, null);
-              }
-            }
-            state.__assignedMembers.set(path.node.left, path);
-            // memberStore(path.node.left, state, path.node.right);
-          }
-          else {
-            state.__assignedMembers = state.__assignedMembers || new Map();
-            state.__assignedMembers.set(path.node.left, null);
-            // memberStore(path.node.left, state, null);
-          }
+          state.__assignedMembers.set(path.node.left, path);
         }
       }
     },
@@ -1101,13 +1068,11 @@ export default function(babel) {
           // t.isFunctionExpression(value)
         ) {
           state.__changed = (state.__changed || 0) + 1;
-          // console.log(`replace ${path.node.name}, ${value.type}`);
           path.replaceWith(t.cloneDeep(value));
         }
 
         state.__assignedMembers = state.__assignedMembers || new Map();
         for (const [key, _path] of state.__assignedMembers.entries()) {
-          // _path && console.log(`${stringifyMember(path.node)}: ${stringifyMember(key)} ${_path ? _path.node.type : 'null'} [${matchesMember(key, path.node)}, ${matchesMember(key, path.node, true)}, ${_path && matchesMember(_path.node.right, path.node)}, ${_path && matchesMember(_path.node.right, path.node, true)}]`);
           if (
             _path &&
             (
@@ -1117,7 +1082,6 @@ export default function(babel) {
               matchesMember(_path.node.right, path.node)
             )
           ) {
-            // console.log(`unset member ref ${stringifyMember(key)}`);
             state.__assignedMembers.set(key, null);
           }
         }
@@ -1201,13 +1165,6 @@ export default function(babel) {
       }
 
       if (
-        // (
-        //   !path.findParent(n => t.isLoop(n)) ||
-        //   path.findParent(t.isForOfStatement) &&
-        //   path.find(p => (
-        //     t.isForOfStatement(p.parent) && p.node === p.parent.right
-        //   ))
-        // ) &&
         path.parent.id !== path.node &&
         (
           path.parentPath.isAssignmentExpression() &&
@@ -1224,7 +1181,6 @@ export default function(babel) {
       ) {
         state.__assignedMembers = state.__assignedMembers || new Map();
         for (const [key, _path] of state.__assignedMembers.entries()) {
-          // _path && console.log(`${stringifyMember(path.node)}: ${stringifyMember(key)} ${_path ? _path.node.type : 'null'} [${matchesMember(key, path.node)}, ${matchesMember(key, path.node, true)}, ${_path && matchesMember(_path.node.right, path.node)}, ${_path && matchesMember(_path.node.right, path.node, true)}]`);
           if (
             _path &&
             (
@@ -1234,7 +1190,6 @@ export default function(babel) {
               matchesMember(_path.node.right, path.node)
             )
           ) {
-            // console.log(`unset id ref ${stringifyMember(key)}`);
             state.__assignedMembers.set(key, null);
           }
         }
