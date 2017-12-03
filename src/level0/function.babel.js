@@ -882,7 +882,10 @@ export default function(babel) {
           // return;
         }
         for (const key in state) {
-          if (matchesMember(path.node.left, state[key])) {
+          if (
+            matchesMember(path.node.left, state[key]) ||
+            matchesMember(path.node.left, t.identifier(key), true)
+          ) {
             state[key] = null;
           }
         }
@@ -947,6 +950,15 @@ export default function(babel) {
             ) {
               if (
                 matchesMember(key, path.node.left) &&
+                (() => {
+                  let noCall = true;
+                  traverse.cheap(_path.node.right, node => {
+                    if (t.isCallExpression(node) && node.arguments.length > 0) {
+                      noCall = false;
+                    }
+                  });
+                  return noCall;
+                })() &&
                 path.findParent(t.isBlockStatement).node === traverse.NodePath.get(_path).findParent(t.isBlockStatement).node
               ) {
                 state.__changed = (state.__changed || 0) + 1;
