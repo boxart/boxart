@@ -320,24 +320,6 @@ export default function(babel) {
   const inlineNames = {};
 
   const inlineFunctions = {
-    FunctionExpression(path, state) {},
-    Identifier(path, state) {
-      // if (
-      //   path.parent.object !== path.node &&
-      //   (
-      //     path.parent.property !== path.node ||
-      //     path.parent.property === path.node &&
-      //     path.parent.computed
-      //   ) &&
-      //   !path.parentPath.isMemberExpression() &&
-      //   path.parent.left !== path.node &&
-      //   path.parent.id !== path.node
-      // ) {
-      //   if (isStatic(state[path.node.name])) {
-      //     path.replaceWith(t.cloneDeep(state[path.node.name]));
-      //   }
-      // }
-    },
     BlockStatement: {
       exit(path, state) {
         if (
@@ -380,7 +362,6 @@ export default function(babel) {
           t.isLiteral(state[path.node.init.name])
         ) {
           state.__changed = (state.__changed || 0) + 1;
-          // console.log(`replace ${stringifyMember(path.node.init.name)} ${state[path.node.init.name].type}`);
           path.get('init').replaceWith(t.cloneDeep(state[path.node.init.name]));
         }
         if (
@@ -680,6 +661,39 @@ export default function(babel) {
     }
   };
 
+  const objectEntriesExpression = t.memberExpression(
+    t.identifier('Object'), t.identifier('entries')
+  );
+  const objectKeysExpression = t.memberExpression(
+    t.identifier('Object'), t.identifier('keys')
+  );
+
+  const isObjectEntriesExpression = node => (
+    t.isMemberExpression(node) &&
+    t.isIdentifier(node.object) &&
+    t.isIdentifier(node.property) &&
+    node.object.name === 'Object' &&
+    node.property.name === 'entries'
+  );
+  const isObjectKeysExpression = node => (
+    t.isMemberExpression(node) &&
+    t.isIdentifier(node.object) &&
+    t.isIdentifier(node.property) &&
+    node.object.name === 'Object' &&
+    node.property.name === 'keys'
+  );
+
+  const findBindingInBlock = (name, body) => (
+    body.body.find(node => (
+      t.isVariableDeclaration(node) &&
+      node.declarations[0].id.name === name
+    ))
+  );
+
+  const countChange = state => {
+    state.__changed = (state.__changed || 0) + 1;
+  };
+
   const lookupAndOps = {
     VariableDeclarator: {
       exit(path, state) {
@@ -690,19 +704,12 @@ export default function(babel) {
             t.isMemberExpression(state[path.node.init.name])
           )
         ) {
-          state.__changed = (state.__changed || 0) + 1;
-          // console.log(`replace ${path.node.init.name} ${state[path.node.init.name].type}`);
+          countChange(state);
           path.get('init').replaceWith(t.cloneDeep(state[path.node.init.name]));
         }
         if (path.getStatementParent().isLoop()) {
           state[path.node.id.name] = null;
         }
-        // if (
-        //   path.parentPath.parentPath.isForStatement() &&
-        //   path.parentPath.parent.init === path.parent
-        // ) {
-        //   return;
-        // }
         if (
           path.get('init').isLiteral() ||
           path.get('init').isObjectExpression() ||
@@ -718,12 +725,11 @@ export default function(babel) {
     ConditionalExpression: {
       exit(path, state) {
         const maybeMember = memberLookup(path.get('test'), state);
-        // logString(path, `${JSON.stringify(path.node.test)} = ${JSON.stringify(maybeMember)}`);
         if (
           t.isFunctionExpression(maybeMember) ||
           t.isLiteral(maybeMember) && maybeMember.value
         ) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(path.node.consequent);
         }
         if (
@@ -732,132 +738,86 @@ export default function(babel) {
           t.isIdentifier(path.node.test.object) &&
           t.isFunctionExpression(state[path.node.test.object.name])
         ) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(path.node.alternate);
         }
       },
     },
     CallExpression: {
       exit(path, state) {
+        // Turn a entries call on a static object expression into an array of
+        // key value pairs.
         if (
-          path.get('callee').isMemberExpression() &&
-          path.get('callee.object').isIdentifier() &&
-          path.get('callee.object').node.name === 'Object' &&
-          path.get('callee.property').node.name === 'entries' &&
-          path.get('arguments.0').isObjectExpression()
+          isObjectEntriesExpression(path.node.callee) &&
+          t.isObjectExpression(path.node.arguments[0])
         ) {
           const ary = t.arrayExpression([]);
-          path.get('arguments.0').node.properties.forEach(property => {
+          path.node.arguments[0].properties.forEach(property => {
             ary.elements.push(t.arrayExpression([
               t.stringLiteral(property.key.name),
               property.value,
             ]));
           });
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(ary);
         }
+
+        // Turn a keys call on a static object expression into an array of keys.
         if (
-          path.get('callee').isMemberExpression() &&
-          path.get('callee.object').isIdentifier() &&
-          path.get('callee.object').node.name === 'Object' &&
-          path.get('callee.property').node.name === 'keys' &&
-          path.get('arguments.0').isObjectExpression()
+          isObjectKeysExpression(path.node.callee) &&
+          t.isObjectExpression(path.node.arguments[0])
         ) {
           const ary = t.arrayExpression([]);
-          path.get('arguments.0').node.properties.forEach(property => {
+          path.node.arguments[0].properties.forEach(property => {
             ary.elements.push(t.stringLiteral(property.key.name));
           });
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(ary);
         }
+
+        // Save a static call to Object.entries or Object.keys on an identifier.
         if (
           path.isCallExpression() &&
-          path.get('callee').isMemberExpression() &&
-          path.get('callee.object').isIdentifier() &&
-          path.get('callee.object').node.name === 'Object' &&
-          path.get('callee.property').node.name === 'entries' &&
-          path.get('arguments.0').isIdentifier() &&
-          !(
-            path.getStatementParent().isVariableDeclaration() ||
-            path.getStatementParent().isExpressionStatement() &&
-            path.getStatementParent().get('expression').isAssignmentExpression()
+          (
+            isObjectEntriesExpression(path.node.callee) ||
+            isObjectKeysExpression(path.node.callee)
           ) &&
-          path.scope.getBinding(path.node.arguments[0].name)
+          t.isIdentifier(path.node.arguments[0])
         ) {
-          const binding = path.scope.getBinding(path.node.arguments[0].name);
-          const name = `__Object_entries_${path.node.arguments[0].name}`;
+          const statementPath = path.getStatementParent();
           if (
-            binding.path.parentPath.isFunctionExpression() &&
-            !binding.path.parent.body.body.find(node => (
-              t.isVariableDeclaration(node) &&
-              node.declarations[0].id.name === name
-            ))
+            !(
+              statementPath.isVariableDeclaration() ||
+              statementPath.isExpressionStatement() &&
+              t.isAssignmentExpression(statementPath.node.expression)
+            ) &&
+            path.scope.getBinding(path.node.arguments[0].name)
           ) {
-            const id = t.identifier(name);
-            binding.path.parent.body.body.unshift(
-              t.variableDeclaration('const', [
-                t.variableDeclarator(id, t.cloneDeep(path.node))
-              ])
-            );
-            state.__changed = (state.__changed || 0) + 1;
-            path.replaceWith(t.cloneDeep(id));
-          }
-          if (
-            binding.path.parentPath.isFunctionExpression() &&
-            binding.path.parent.body.body.find(node => (
-              t.isVariableDeclaration(node) &&
-              node.declarations[0].id.name === name
-            ))
-          ) {
-            const id = t.identifier(name);
-            state.__changed = (state.__changed || 0) + 1;
-            path.replaceWith(t.cloneDeep(id));
+            const binding = path.scope.getBinding(path.node.arguments[0].name);
+            if (t.isFunctionExpression(binding.path.parent)) {
+              let name;
+              if (isObjectEntriesExpression(path.node.callee)) {
+                name = `__Object_entries_${path.node.arguments[0].name}`;
+              }
+              else if (isObjectKeysExpression(path.node.callee)) {
+                name = `__Object_keys_${path.node.arguments[0].name}`;
+              }
+              const id = t.identifier(name);
+
+              if (!findBindingInBlock(name, binding.path.parent.body)) {
+                binding.path.parent.body.body.unshift(
+                  t.variableDeclaration('const', [
+                    t.variableDeclarator(id, t.cloneDeep(path.node))
+                  ])
+                );
+              }
+              countChange(state);
+              path.replaceWith(t.cloneDeep(id));
+            }
           }
         }
-        if (
-          path.isCallExpression() &&
-          path.get('callee').isMemberExpression() &&
-          path.get('callee.object').isIdentifier() &&
-          path.get('callee.object').node.name === 'Object' &&
-          path.get('callee.property').node.name === 'keys' &&
-          path.get('arguments.0').isIdentifier() &&
-          !(
-            path.getStatementParent().isVariableDeclaration() ||
-            path.getStatementParent().isExpressionStatement() &&
-            path.getStatementParent().get('expression').isAssignmentExpression()
-          ) &&
-          path.scope.getBinding(path.node.arguments[0].name)
-        ) {
-          const binding = path.scope.getBinding(path.node.arguments[0].name);
-          const name = `__Object_keys_${path.node.arguments[0].name}`;
-          if (
-            binding.path.parentPath.isFunctionExpression() &&
-            !binding.path.parent.body.body.find(node => (
-              t.isVariableDeclaration(node) &&
-              node.declarations[0].id.name === name
-            ))
-          ) {
-            const id = t.identifier(name);
-            binding.path.parent.body.body.unshift(
-              t.variableDeclaration('const', [
-                t.variableDeclarator(id, t.cloneDeep(path.node))
-              ])
-            );
-            state.__changed = (state.__changed || 0) + 1;
-            path.replaceWith(t.cloneDeep(id));
-          }
-          if (
-            binding.path.parentPath.isFunctionExpression() &&
-            binding.path.parent.body.body.find(node => (
-              t.isVariableDeclaration(node) &&
-              node.declarations[0].id.name === name
-            ))
-          ) {
-            const id = t.identifier(name);
-            state.__changed = (state.__changed || 0) + 1;
-            path.replaceWith(t.cloneDeep(id));
-          }
-        }
+        // As it still is a call, unset known values to that only partially
+        // match member expression arguments in the call.
         if (path.isCallExpression()) {
           path.node.arguments.forEach(arg => {
             for (const key in state) {
@@ -880,7 +840,7 @@ export default function(babel) {
             t.isVariableDeclaration(binding.path.parent) &&
             binding.path.parent.kind === 'const'
           ) {
-            state.__changed = (state.__changed || 0) + 1;
+            countChange(state);
             binding.path.parent.kind = 'let';
           }
         }
@@ -919,8 +879,7 @@ export default function(babel) {
             t.isMemberExpression(state[path.node.right.name])
           )
         ) {
-          state.__changed = (state.__changed || 0) + 1;
-          // console.log(`replace ${stringifyMember(path.node.right.name)} ${state[path.node.right.name].type}`);
+          countChange(state);
           path.get('right')
           .replaceWith(t.cloneDeep(state[path.node.right.name]));
         }
@@ -930,8 +889,7 @@ export default function(babel) {
             path.get('right').isIdentifier() &&
             t.isLiteral(state[path.node.right.name])
           ) {
-            state.__changed = (state.__changed || 0) + 1;
-            // console.log(`replace ${stringifyMember(path.node.right.name)} ${state[path.node.right.name].type}`);
+            countChange(state);
             path.get('right')
             .replaceWith(t.cloneDeep(state[path.node.right.name]));
           }
@@ -998,7 +956,7 @@ export default function(babel) {
                 })() &&
                 path.findParent(t.isBlockStatement).node === traverse.NodePath.get(_path).findParent(t.isBlockStatement).node
               ) {
-                state.__changed = (state.__changed || 0) + 1;
+                countChange(state);
                 traverse.NodePath.get(_path).remove();
               }
               state.__assignedMembers.set(key, null);
@@ -1025,7 +983,7 @@ export default function(babel) {
           t.isObjectExpression(maybeMember) ||
           t.isArrayExpression(maybeMember)
         ) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(path.node.consequent);
         }
         else if (
@@ -1037,7 +995,7 @@ export default function(babel) {
               t.isFunctionExpression(memberLookup(path.node.test.object, state))
           )
         ) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(path.node.alternate);
         }
         else if (
@@ -1047,7 +1005,7 @@ export default function(babel) {
           t.isMemberExpression(path.node.test) &&
             t.isFunctionExpression(memberLookup(path.node.test.object, state))
         ) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.remove();
         }
       },
@@ -1076,7 +1034,7 @@ export default function(babel) {
           path.node.computed &&
           path.get('property').isStringLiteral()
         ) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(
             t.memberExpression(
               path.node.object,
@@ -1119,7 +1077,7 @@ export default function(babel) {
         // }
         // // path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(`${stack.length} ${JSON.stringify(value)}`)));
         // if (t.isLiteral(value)) {
-        //   state.__changed = (state.__changed || 0) + 1;
+        //   countChange(state);
         //   path.replaceWith(t.cloneDeep(value));
         // }
         let value = memberLookup(path, state);
@@ -1129,7 +1087,7 @@ export default function(babel) {
           t.isMemberExpression(value)
           // t.isFunctionExpression(value)
         ) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(t.cloneDeep(value));
         }
 
@@ -1198,8 +1156,7 @@ export default function(babel) {
           return;
         }
         if (state[path.node.name] && isStatic(state[path.node.name], state)) {
-          state.__changed = (state.__changed || 0) + 1;
-          // console.log(`replace(static) ${path.node.name}, ${state[path.node.name].type}`);
+          countChange(state);
           path.replaceWith(t.cloneDeep(state[path.node.name]));
         }
         if (
@@ -1209,8 +1166,7 @@ export default function(babel) {
             t.isMemberExpression(state[path.node.name])
           )
         ) {
-          state.__changed = (state.__changed || 0) + 1;
-          // console.log(`replace ${path.node.name} ${state[path.node.name].type}`);
+          countChange(state);
           path.replaceWith(t.cloneDeep(state[path.node.name]));
         }
         else if (
@@ -1220,8 +1176,7 @@ export default function(babel) {
             t.isMemberExpression(memberLookup(path.node, state))
           )
         ) {
-          state.__changed = (state.__changed || 0) + 1;
-          // console.log(`replace ${stringifyMember(path.node)} ${memberLookup(path.node, state).type}`);
+          countChange(state);
           path.replaceWith(t.cloneDeep(memberLookup(path.node, state)));
         }
       }
@@ -1267,13 +1222,12 @@ export default function(babel) {
           (path.node.operator === '*' || path.node.operator === '+')
         ) {
           const e = path.evaluate();
-          // e.confident && console.log(`replace ${path.node.left.value} ${path.node.operator} ${path.node.right.value} ${e.value}`);
           if (e.confident && typeof e.value === 'number') {
-            state.__changed = (state.__changed || 0) + 1;
+            countChange(state);
             path.replaceWith(t.numericLiteral(e.value));
           }
           if (e.confident && typeof e.value === 'string') {
-            state.__changed = (state.__changed || 0) + 1;
+            countChange(state);
             path.replaceWith(t.stringLiteral(e.value));
           }
         }
@@ -1285,7 +1239,7 @@ export default function(babel) {
             path.node.left.operator === '+' && path.node.operator === '+'
           )
         ) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(
             t.binaryExpression(
               path.node.left.operator,
@@ -1295,11 +1249,11 @@ export default function(babel) {
           );
           const e = path.get('right').evaluate();
           if (e.confident && typeof e.value === 'number') {
-            state.__changed = (state.__changed || 0) + 1;
+            countChange(state);
             path.get('right').replaceWith(t.numericLiteral(e.value));
           }
           if (e.confident && typeof e.value === 'string') {
-            state.__changed = (state.__changed || 0) + 1;
+            countChange(state);
             path.get('right').replaceWith(t.stringLiteral(e.value));
           }
         }
