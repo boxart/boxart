@@ -112,6 +112,7 @@ export default function(babel) {
   let values = {};
 
   const memberLookup = (path, state) => {
+    // console.log('lookup', stringifyMember(path.node || path));
     let stack = [];
     let node = path.node || path;
     while (t.isMemberExpression(node)) {
@@ -134,7 +135,16 @@ export default function(babel) {
       node = node.object;
     }
     if (!t.isIdentifier(node)) {return;}
+
     let value = state[node.name];
+
+    if (
+      (t.isIdentifier(value) || t.isMemberExpression(value)) &&
+      !matchesMember(path.node || path, value)
+    ) {
+      value = memberLookup(value, state);
+    }
+
     // console.log(JSON.stringify([node.name].concat(stack)));
     // logString(path, JSON.stringify([node.name, value]));
     while (value && (value.properties || value.elements) && stack.length > 0) {
@@ -149,11 +159,22 @@ export default function(babel) {
       if (t.isObjectProperty(value)) {
         value = value.value;
       }
-      if (t.isIdentifier(value) && state[value.name]) {
-        value = state[value.name];
+
+      if (
+        (t.isIdentifier(value) || t.isMemberExpression(value)) &&
+        !matchesMember(path.node || path, value)
+      ) {
+        value = memberLookup(value, state);
       }
     }
     if (stack.length === 0) {
+      // t.isMemberExpression(path.node || path) && console.log(JSON.stringify(path.node || path), JSON.stringify(value))
+      if (
+        (t.isIdentifier(value) || t.isMemberExpression(value)) &&
+        !matchesMember(path.node || path, value)
+      ) {
+        return memberLookup(value, state);
+      }
       return value;
     }
   };
@@ -884,7 +905,9 @@ export default function(babel) {
         for (const key in state) {
           if (
             matchesMember(path.node.left, state[key]) ||
-            matchesMember(path.node.left, t.identifier(key), true)
+            (
+              t.isObjectExpression(state[key])
+            ) && matchesMember(path.node.left, t.identifier(key), true)
           ) {
             state[key] = null;
           }
@@ -934,8 +957,21 @@ export default function(babel) {
         }
 
         if (
-          t.isIdentifier(path.node.left) ||
-          t.isMemberExpression(path.node.left)
+          path.get('right').isFunctionExpression() ||
+          path.get('right').isObjectExpression() ||
+          path.get('right').isArrayExpression()
+        ) {
+          // console.log('store', stringifyMember(path.node.left));
+          memberStore(path.get('left'), state, path.node.right);
+          // console.log(JSON.stringify(state));
+        }
+
+        if (
+          t.isAssignmentExpression(path.node) &&
+          (
+            t.isIdentifier(path.node.left) ||
+            t.isMemberExpression(path.node.left)
+          )
         ) {
           state.__assignedMembers = state.__assignedMembers || new Map();
           for (const [key, _path] of state.__assignedMembers.entries()) {
@@ -949,6 +985,7 @@ export default function(babel) {
               )
             ) {
               if (
+                key !== path.node.left &&
                 matchesMember(key, path.node.left) &&
                 (() => {
                   let noCall = true;
@@ -974,12 +1011,19 @@ export default function(babel) {
     IfStatement: {
       exit(path, state) {
         const r = path.get('test').evaluate();
+        // console.log('ifStatement');
+        const maybeMember = memberLookup(path.node.test, state);
+        // console.log(stringifyMember(path.node.test), JSON.stringify(maybeMember));
         if (
           r.confident && r.value ||
           t.isLiteral(path.node.test) && path.node.test.value ||
           t.isFunctionExpression(path.node.test) ||
           t.isObjectExpression(path.node.test) ||
-          t.isArrayExpression(path.node.test)
+          t.isArrayExpression(path.node.test) ||
+          t.isLiteral(maybeMember) && maybeMember.value ||
+          t.isFunctionExpression(maybeMember) ||
+          t.isObjectExpression(maybeMember) ||
+          t.isArrayExpression(maybeMember)
         ) {
           state.__changed = (state.__changed || 0) + 1;
           path.replaceWith(path.node.consequent);
@@ -987,7 +1031,10 @@ export default function(babel) {
         else if (
           path.node.alternate && (
             r.confident ||
-            t.isLiteral(path.node.test) && !path.node.test.value
+            t.isLiteral(path.node.test) && !path.node.test.value ||
+            t.isLiteral(maybeMember) && !maybeMember.value ||
+            t.isMemberExpression(path.node.test) &&
+              t.isFunctionExpression(memberLookup(path.node.test.object, state))
           )
         ) {
           state.__changed = (state.__changed || 0) + 1;
@@ -995,7 +1042,10 @@ export default function(babel) {
         }
         else if (
           r.confident ||
-          t.isLiteral(path.node.test) && !path.node.test.value
+          t.isLiteral(path.node.test) && !path.node.test.value ||
+          t.isLiteral(maybeMember) && !maybeMember.value ||
+          t.isMemberExpression(path.node.test) &&
+            t.isFunctionExpression(memberLookup(path.node.test.object, state))
         ) {
           state.__changed = (state.__changed || 0) + 1;
           path.remove();
@@ -1356,6 +1406,13 @@ export default function(babel) {
   };
 
   const deadCode = {
+    BlockStatement: {
+      exit(path) {
+        if (t.isBlockStatement(path.parent) && path.node.body.length === 0) {
+          path.remove();
+        }
+      },
+    },
     Identifier(path, state) {
       if (
         path.parent.id === path.node

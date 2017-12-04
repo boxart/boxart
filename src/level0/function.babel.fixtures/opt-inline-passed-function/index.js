@@ -3,7 +3,7 @@ function inlinePassedFunction() {
     return 'f' + g();
   };
   const g = function(h) {
-    return 'g' + h();
+    return 'g' + h.h();
   };
   const h = function() {
     return 'h';
@@ -14,7 +14,9 @@ function inlinePassedFunction() {
     };
     return a;
   };
-  return i(function() {return g(function() {return f(h);});});
+  const j = function() {return h();};
+  j.h = function() {return f(h);};
+  return i(function() {return g(j);});
 }
 
 module.exports = inlinePassedFunction;
