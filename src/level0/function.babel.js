@@ -4,6 +4,35 @@ const INNER_ITERATIONS = 100;
 export default function(babel) {
   const { types: t, traverse } = babel;
 
+  const countChange = state => {
+    state.__changed = (state.__changed || 0) + 1;
+  };
+
+  const store = (id, state, path) => {
+    if (typeof id === 'string') {
+      state[id] = path && path.node || path;
+    }
+    else if (id.node) {
+      state[id.node.name] = path && path.node || path;
+    }
+    else {
+      state[id.name] = path && path.node || path;
+    }
+    return path;
+  };
+
+  const load = (id, state) => {
+    if (typeof id === 'string') {
+      return state[id];
+    }
+    else if (id.node) {
+      return state[id.node.name];
+    }
+    else {
+      return state[id.name];
+    }
+  };
+
   function stringifyMember(node) {
     if (t.isIdentifier(node)) {
       return node.name;
@@ -30,7 +59,7 @@ export default function(babel) {
     if (t.isLiteral(node)) {
       return true;
     }
-    else if (t.isIdentifier(node) && isStatic(state[node.name], state)) {
+    else if (t.isIdentifier(node) && isStatic(load(node, state), state)) {
       return true;
     }
     else if (t.isMemberExpression(node) && isStatic(memberLookup(node, state), state)) {
@@ -67,7 +96,7 @@ export default function(babel) {
     if (path.isLiteral()) {
       return true;
     }
-    else if (path.isIdentifier() && isStatic(state[path.node.name], state)) {
+    else if (path.isIdentifier() && isStatic(load(path, state), state)) {
       return true;
     }
     else if (path.isMemberExpression() && isStatic(memberLookup(path.node, state), state)) {
@@ -118,8 +147,8 @@ export default function(babel) {
     while (t.isMemberExpression(node)) {
       if (node.computed) {
         if (t.isIdentifier(node.property)) {
-          if (!t.isLiteral(state[node.property.name])) {return;}
-          stack.unshift(state[node.property.name].value);
+          if (!t.isLiteral(load(node.property, state))) {return;}
+          stack.unshift(load(node.property, state).value);
         }
         else if (t.isLiteral(node.property)) {
           stack.unshift(node.property.value);
@@ -136,7 +165,7 @@ export default function(babel) {
     }
     if (!t.isIdentifier(node)) {return;}
 
-    let value = state[node.name];
+    let value = load(node, state);
 
     if (
       (t.isIdentifier(value) || t.isMemberExpression(value)) &&
@@ -203,9 +232,9 @@ export default function(babel) {
       node = node.object;
     }
     if (!t.isIdentifier(node)) {return;}
-    let value = state[node.name];
+    let value = load(node, state);
     if (!value) {
-      value = state[node.name] = {};
+      value = store(node, state, {});
     }
     while (value && stack.length > 0) {
       if (!value.properties) {
@@ -304,15 +333,15 @@ export default function(babel) {
         t.isVariableDeclarator(path.parent) && path.parent.id === path.node ||
         t.isArrayPattern(path.parent)
       ) {
-        state[path.node.name] = path.node.name;
+        store(path, state, path);
       }
     }
   };
 
   const setNames = {
     Identifier(path, state) {
-      if (state[path.node.name]) {
-        path.node.name = state[path.node.name];
+      if (load(path, state)) {
+        path.node.name = load(path, state);
       }
     },
   };
@@ -329,10 +358,9 @@ export default function(babel) {
           ) &&
           path.scope.__names
         ) {
-          // path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(`${JSON.stringify(path.scope.__names)}`)));
           for (let name of path.scope.__names) {
-            if (state[name]) {
-              state[name] = null;
+            if (load(name, state)) {
+              store(name, state, null);
             }
           }
           path.scope.__names = [];
@@ -341,52 +369,54 @@ export default function(babel) {
     },
     VariableDeclarator: {
       enter(path, state) {
-        if (!path.node.id.name) {return;}
-        // if (!inlineNames[path.node.id.name]) {
-          path.scope.rename(path.node.id.name);
-          inlineNames[path.node.id.name] = true;
-        // }
+        const id = path.node.id;
+        if (!id.name) {return;}
+        path.scope.rename(id.name);
+        inlineNames[id.name] = true;
         if (path.getStatementParent().isLoop()) {
-          state[path.node.id.name] = null;
+          store(id, state, null);
           path.skip();
         }
       },
       exit(path, state) {
+        const id = path.node.id;
+        const init = path.node.init;
+        const initPath = path.get('init');
         if (path.getStatementParent().isLoop()) {
-          state[path.node.id.name] = null;
+          store(id, state, null);
           return;
         }
         if (
-          path.get('init').isIdentifier() &&
-          state[path.node.init.name] &&
-          t.isLiteral(state[path.node.init.name])
+          t.isIdentifier(init) &&
+          load(init, state) &&
+          t.isLiteral(load(init, state))
         ) {
-          state.__changed = (state.__changed || 0) + 1;
-          path.get('init').replaceWith(t.cloneDeep(state[path.node.init.name]));
+          countChange(state);
+          initPath.replaceWith(t.cloneDeep(load(init, state)));
         }
         if (
-          path.get('init').isIdentifier() &&
-          t.isFunctionExpression(state[path.node.init.name])
+          t.isIdentifier(init) &&
+          t.isFunctionExpression(load(init, state))
         ) {
-          state[path.node.id.name] = state[path.node.init.name];
+          store(id, state, load(init, state));
         }
         if (
-          path.get('init').isMemberExpression() &&
-          t.isFunctionExpression(memberLookup(path.get('init'), state))
+          t.isMemberExpression(init) &&
+          t.isFunctionExpression(memberLookup(initPath, state))
         ) {
-          state[path.node.id.name] = memberLookup(path.get('init'), state);
+          store(id, state, memberLookup(initPath, state));
         }
-        if (path.get('init').isFunctionExpression()) {
-          state[path.node.id.name] = path.node.init;
+        if (t.isFunctionExpression(init)) {
+          store(id, state, init);
         }
-        if (path.get('init').isNumericLiteral()) {
-          state[path.node.id.name] = path.node.init;
+        if (t.isNumericLiteral(init)) {
+          store(id, state, init);
         }
-        if (path.get('init').isArrayExpression()) {
-          state[path.node.id.name] = path.node.init;
+        if (t.isArrayExpression(init)) {
+          store(id, state, init);
         }
-        if (path.get('init').isObjectExpression()) {
-          state[path.node.id.name] = path.node.init;
+        if (t.isObjectExpression(init)) {
+          store(id, state, init);
         }
       }
     },
@@ -394,53 +424,54 @@ export default function(babel) {
       // enter(path, state) {
       // },
       exit(path, state) {
+        const leftPath = path.get('left');
+        const rightPath = path.get('right');
         if (matchesMember(path.node.left, path.node.right)) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.remove();
           return;
         }
         if (
-          path.get('left').isIdentifier() &&
+          leftPath.isIdentifier() &&
           path.getStatementParent().isLoop()
         ) {
-          state[path.node.id.name] = null;
+          store(path.node.id, state, null);
           return;
         }
         for (const key in state) {
-          if (matchesMember(path.node.left, state[key])) {
-            state[key] = null;
+          if (matchesMember(path.node.left, load(key, state))) {
+            store(key, state, null);
           }
         }
         if (
-          path.get('right').isFunctionExpression() ||
-          path.get('right').isObjectExpression() ||
-          path.get('right').isArrayExpression()
+          rightPath.isFunctionExpression() ||
+          rightPath.isObjectExpression() ||
+          rightPath.isArrayExpression()
         ) {
-          memberStore(path.get('left'), state, path.node.right);
+          memberStore(leftPath, state, path.node.right);
         }
-        if (path.get('left').isIdentifier()) {
+        if (leftPath.isIdentifier()) {
           const name = path.node.left.name;
           if (
-            path.get('right').isIdentifier() &&
-            t.isLiteral(state[path.node.right.name])
+            rightPath.isIdentifier() &&
+            t.isLiteral(load(path.node.right, state))
           ) {
-            state.__changed = (state.__changed || 0) + 1;
-            // console.log(`replace ${path.node.right.name} ${state[path.node.right.name].type}`);
-            path.get('right')
-            .replaceWith(t.cloneDeep(state[path.node.right.name]));
+            countChange(state);
+            rightPath
+            .replaceWith(t.cloneDeep(load(path.node.right, state)));
           }
-          if (path.get('right').isFunctionExpression()) {
-            state[name] = path.node.right;
+          if (rightPath.isFunctionExpression()) {
+            store(name, state, rightPath);
           }
           else if (
-            path.get('right').isLiteral() ||
-            path.get('right').isObjectExpression() ||
-            path.get('right').isArrayExpression()
+            rightPath.isLiteral() ||
+            rightPath.isObjectExpression() ||
+            rightPath.isArrayExpression()
           ) {
-            state[name] = path.node.right;
+            store(name, state, rightPath);
           }
           else {
-            state[name] = null;
+            store(name, state, null);
           }
 
           if (!path.scope.__names) {
@@ -455,133 +486,104 @@ export default function(babel) {
     ForStatement: {},
     ForOfStatement: {
       enter(path, state) {
-        const value = memberLookup(path.get('right'), state);
+        const rightPath = path.get('right');
+        const value = memberLookup(rightPath, state);
         if (
           t.isIdentifier(value) ||
           t.isMemberExpression(value) ||
           t.isFunctionExpression(value) ||
           t.isArrayExpression(value)
         ) {
-          state.__changed = (state.__changed || 0) + 
-          // console.log(`replace ${stringifyMember(path.node.right)} ${value.type}`);
-          path.get('right').replaceWith(t.cloneDeep(value));
+          countChange(state);
+          rightPath.replaceWith(t.cloneDeep(value));
         }
-        // if (value) {
-        //   state.__changed = (state.__changed || 0) + 1;
-        //   memberReplace(path.get('right'), state);
-        // }
       },
       exit(path, state) {
-        if (isStaticPath(path.get('right'), state)) {
+        const rightPath = path.get('right');
+        if (isStaticPath(rightPath, state)) {
+          const declareNameExpr = (name, expr) => (
+            t.variableDeclaration(
+              "const",
+              [t.variableDeclarator(t.identifier(name), t.cloneDeep(expr))]
+            )
+          );
+
           if (
-            path.get('right').isArrayExpression() &&
-            path.get('left.declarations.0.id').isIdentifier()
+            rightPath.isArrayExpression() &&
+            t.isIdentifier(path.node.left.declarations[0].id)
           ) {
-            state.__changed = (state.__changed || 0) + 1;
+            countChange(state);
             let block = [];
-            // const originalName = path.get(`left.declarations.0.id`).node.name;
-            // path.scope.rename(path.get(`left.declarations.0.id`).node.name);
-            // path.scope.rename(path.get(`left.declarations.0.id`).node.name);
-            path.get('right').node.elements.forEach(expr => {
-              path.scope.rename(path.get(`left.declarations.0.id`).node.name);
-              const name = path.get(`left.declarations.0.id`).node.name;
-              block.push(
-                t.variableDeclaration(
-                  "const",
-                  [t.variableDeclarator(t.identifier(name), t.cloneDeep(expr))]
-                )
-              );
-              path.get(`body`).node.body.forEach(expr => {
+            const left0Id = path.get(`left.declarations.0.id`);
+            rightPath.node.elements.forEach(expr => {
+              path.scope.rename(left0Id.node.name);
+              const name = left0Id.node.name;
+              block.push(declareNameExpr(name, expr));
+              path.node.body.body.forEach(expr => {
                 block.push(t.cloneDeep(expr));
               });
-              // traverse(t.blockStatement(block), renameAll, path.scope);
-              path.scope.rename(path.get(`left.declarations.0.id`).node.name);
-              // path.scope.rename(path.get(`left.declarations.0.id`).node.name);
+              path.scope.rename(left0Id.node.name);
             });
-            // path.getStatementParent().insertBefore(t.blockStatement(block));
-            // path.scope.rename(path.get(`left.declarations.0.id`).node.name, '_' + Math.random().toString(16).substring(2));
             block.forEach(n => path.insertBefore(n));
             path.remove();
-            // path.replaceWith(t.blockStatement(block));
           }
           if (
             path.isForOfStatement() &&
-            path.get('left.declarations.0.id').isArrayPattern() &&
-            path.get('left.declarations.0.id').node.elements.length === 2 &&
-            path.get('right').isArrayExpression()
+            t.isArrayPattern(path.node.left.declarations[0].id) &&
+            path.node.left.declarations[0].id.elements.length === 2 &&
+            rightPath.isArrayExpression()
           ) {
-            state.__changed = (state.__changed || 0) + 1;
+            countChange(state);
             let block = [];
-            const statement = t.blockStatement(block);
-            path.scope.rename(path.get(`left.declarations.0.id.elements.0`).node.name);
-            path.scope.rename(path.get(`left.declarations.0.id.elements.1`).node.name);
-            path.get('right').node.elements.forEach(expr => {
-              const name1 = path.get(`left.declarations.0.id.elements.0`).node.name;
-              const name2 = path.get(`left.declarations.0.id.elements.1`).node.name;
-              block.push(
-                t.variableDeclaration(
-                  "const",
-                  [t.variableDeclarator(t.identifier(name1), t.cloneDeep(expr.elements[0]))]
-                )
-              );
-              block.push(
-                t.variableDeclaration(
-                  "const",
-                  [t.variableDeclarator(t.identifier(name2), t.cloneDeep(expr.elements[1]))]
-                )
-              );
-              path.get(`body`).node.body.forEach(expr => {
+            const left0Id = path.get(`left.declarations.0.id`);
+            const pattern0Id = left0Id.get('elements.0');
+            const pattern1Id = left0Id.get('elements.1');
+            path.scope.rename(pattern0Id.node.name);
+            path.scope.rename(pattern1Id.node.name);
+            rightPath.node.elements.forEach(expr => {
+              const name1 = pattern0Id.node.name;
+              const name2 = pattern1Id.node.name;
+              block.push(declareNameExpr(name1, expr.elements[0]));
+              block.push(declareNameExpr(name2, expr.elements[1]));
+              path.node.body.body.forEach(expr => {
                 block.push(t.cloneDeep(expr));
               });
-              // traverse(statement, renameAll, path.scope);
-              // block = statement.body;
-              path.scope.rename(path.get(`left.declarations.0.id.elements.0`).node.name);
-              path.scope.rename(path.get(`left.declarations.0.id.elements.1`).node.name);
+              path.scope.rename(pattern0Id.node.name);
+              path.scope.rename(pattern1Id.node.name);
             });
-            // path.insertBefore(t.blockStatement(block));
-            // path.getStatementParent().insertBefore(t.blockStatement(block));
-            statement.body.forEach(n => path.insertBefore(n));
+            block.forEach(n => path.insertBefore(n));
             path.remove();
           }
         }
       },
     },
-    // BlockStatement: {
-    //   exit(path, state) {
-    //     if (path.parentPath.isBlockStatement()) {
-    //       path.node.body.forEach(node => path.insertBefore(t.cloneDeep(node)));
-    //       path.remove();
-    //     }
-    //     // if (!path.parentPath.isConditional() && path.parentPath.is)
-    //   },
-    // },
     ConditionalExpression: {
       exit(path, state) {
+        const test = path.node.test;
         const maybeMember = memberLookup(path.get('test'), state);
-        // logString(path, `${JSON.stringify(path.node.test)} = ${JSON.stringify(maybeMember)}`);
         if (
           t.isFunctionExpression(maybeMember) ||
           t.isLiteral(maybeMember) && maybeMember.value
         ) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(path.node.consequent);
         }
         if (
           t.isConditionalExpression(path.node) &&
-          t.isMemberExpression(path.node.test) &&
+          t.isMemberExpression(test) &&
           (
-            t.isIdentifier(path.node.test.object) &&
-            t.isFunctionExpression(state[path.node.test.object.name]) ||
-            t.isIdentifier(path.node.test.object) &&
-            t.isLiteral(state[path.node.test.object.name]) ||
-            t.isIdentifier(path.node.test.object) &&
-            t.isArrayExpression(state[path.node.test.object.name]) ||
-            t.isMemberExpression(path.node.test.object) &&
-            t.isIdentifier(path.node.test.object.object) &&
-            t.isFunctionExpression(state[path.node.test.object.object.name])
+            t.isIdentifier(test.object) &&
+            t.isFunctionExpression(load(test.object, state)) ||
+            t.isIdentifier(test.object) &&
+            t.isLiteral(load(test.object, state)) ||
+            t.isIdentifier(test.object) &&
+            t.isArrayExpression(load(test.object, state)) ||
+            t.isMemberExpression(test.object) &&
+            t.isIdentifier(test.object.object) &&
+            t.isFunctionExpression(load(test.object.object, state))
           )
         ) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           path.replaceWith(path.node.alternate);
         }
       },
@@ -589,7 +591,7 @@ export default function(babel) {
     CallExpression: {
       enter(path, state) {
         if (memberLookup(path.get('callee'), state)) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           memberReplace(path.get('callee'), state);
         }
         if (path.get("callee").isFunctionExpression()) {
@@ -602,11 +604,11 @@ export default function(babel) {
       },
       exit(path, state) {
         if (memberLookup(path.get('callee'), state)) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           memberReplace(path.get('callee'), state);
         }
         if (path.get("callee").isFunctionExpression()) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           const args = path.node.arguments;
           const params = path.node.callee.params;
           params.forEach((p, i) => {
@@ -619,20 +621,21 @@ export default function(babel) {
                   [t.variableDeclarator(p, args[i])]
                 )
               );
+            const argPath = path.get(`arguments.${i}`);
             if (
-              path.get(`arguments.${i}`).isIdentifier() &&
-              t.isFunctionExpression(state[args[i].name])
+              argPath.isIdentifier() &&
+              t.isFunctionExpression(load(args[i], state))
             ) {
-              state[p.name] = state[args[i].name];
+              store(p, state, load(args[i], state));
             }
-            if (path.get(`arguments.${i}`).isLiteral()) {
-              state[p.name] = args[i];
+            if (argPath.isLiteral()) {
+              store(p, state, argPath);
             }
           });
           path.getStatementParent().scope.crawl();
         }
         if (path.get("callee").isFunctionExpression()) {
-          state.__changed = (state.__changed || 0) + 1;
+          countChange(state);
           let hasReturn = false;
           path.get("callee.body").node.body.forEach(expr => {
             if (t.isReturnStatement(expr)) {
@@ -649,10 +652,8 @@ export default function(babel) {
         if (path.isCallExpression()) {
           path.node.arguments.forEach(arg => {
             for (const key in state) {
-              if (matchesMember(state[key], arg, true)) {
-                // console.log(`${stringifyMember(state[key])}, ${stringifyMember(arg)}`);
-                // logString(path, String(t.isIdentifier(arg) && arg.name));
-                state[key] = null;
+              if (matchesMember(load(key, state), arg, true)) {
+                store(key, state, null);
               }
             }
           });
@@ -690,35 +691,45 @@ export default function(babel) {
     ))
   );
 
-  const countChange = state => {
-    state.__changed = (state.__changed || 0) + 1;
+  const evaluateToLiteral = (path, state) => {
+    const e = path.evaluate();
+    if (e.confident && typeof e.value === 'number') {
+      countChange(state);
+      path.replaceWith(t.numericLiteral(e.value));
+    }
+    if (e.confident && typeof e.value === 'string') {
+      countChange(state);
+      path.replaceWith(t.stringLiteral(e.value));
+    }
   };
 
   const lookupAndOps = {
     VariableDeclarator: {
       exit(path, state) {
+        const id = path.node.id;
+        const init = path.node.init;
         if (
-          path.get('init').isIdentifier() &&
+          t.isIdentifier(init) &&
           (
-            t.isIdentifier(state[path.node.init.name]) ||
-            t.isMemberExpression(state[path.node.init.name])
+            t.isIdentifier(load(init, state)) ||
+            t.isMemberExpression(load(init, state))
           )
         ) {
           countChange(state);
-          path.get('init').replaceWith(t.cloneDeep(state[path.node.init.name]));
+          path.get('init').replaceWith(t.cloneDeep(load(init, state)));
         }
         if (path.getStatementParent().isLoop()) {
-          state[path.node.id.name] = null;
+          store(id, state, null);
         }
         if (
-          path.get('init').isLiteral() ||
-          path.get('init').isObjectExpression() ||
-          path.get('init').isArrayExpression() ||
-          path.get('init').isIdentifier() ||
-          path.get('init').isMemberExpression() ||
-          path.get('init').isFunction()
+          t.isLiteral(init) ||
+          t.isObjectExpression(init) ||
+          t.isArrayExpression(init) ||
+          t.isIdentifier(init) ||
+          t.isMemberExpression(init) ||
+          t.isFunction(init)
         ) {
-          state[path.node.id.name] = path.node.init;
+          store(id, state, path.get('init'));
         }
       },
     },
@@ -736,7 +747,7 @@ export default function(babel) {
           t.isConditionalExpression(path.node) &&
           t.isMemberExpression(path.node.test) &&
           t.isIdentifier(path.node.test.object) &&
-          t.isFunctionExpression(state[path.node.test.object.name])
+          t.isFunctionExpression(load(path.node.test.object, state))
         ) {
           countChange(state);
           path.replaceWith(path.node.alternate);
@@ -821,8 +832,8 @@ export default function(babel) {
         if (path.isCallExpression()) {
           path.node.arguments.forEach(arg => {
             for (const key in state) {
-              if (matchesMember(state[key], arg, true)) {
-                state[key] = null;
+              if (matchesMember(load(key, state), arg, true)) {
+                store(key, state, null);
               }
             }
           });
@@ -848,62 +859,58 @@ export default function(babel) {
           path.get('left').isIdentifier() &&
           path.getStatementParent().isLoop()
         ) {
-          state[path.node.id.name] = null;
+          store(path, state, null);
           return;
         }
       },
-      // enter(path, state) {
-      // },
       exit(path, state) {
+        const leftPath = path.get('left');
+        const rightPath = path.get('right');
         if (
-          path.get('left').isIdentifier() &&
+          leftPath.isIdentifier() &&
           path.getStatementParent().isLoop()
         ) {
-          state[path.node.id.name] = null;
-          // return;
+          store(path, state, null);
         }
         for (const key in state) {
           if (
-            matchesMember(path.node.left, state[key]) ||
+            matchesMember(path.node.left, load(key, state)) ||
             (
-              t.isObjectExpression(state[key])
+              t.isObjectExpression(load(key, state))
             ) && matchesMember(path.node.left, t.identifier(key), true)
           ) {
-            state[key] = null;
+            store(key, state, null);
           }
         }
         if (
-          path.get('right').isIdentifier() &&
+          rightPath.isIdentifier() &&
           (
-            t.isIdentifier(state[path.node.right.name]) ||
-            t.isMemberExpression(state[path.node.right.name])
+            t.isIdentifier(load(path.node.right, state)) ||
+            t.isMemberExpression(load(path.node.right, state))
           )
         ) {
           countChange(state);
-          path.get('right')
-          .replaceWith(t.cloneDeep(state[path.node.right.name]));
+          rightPath.replaceWith(t.cloneDeep(load(path.node.right, state)));
         }
-        if (path.get('left').isIdentifier()) {
+        if (leftPath.isIdentifier()) {
           const name = path.node.left.name;
           if (
-            path.get('right').isIdentifier() &&
-            t.isLiteral(state[path.node.right.name])
+            rightPath.isIdentifier() &&
+            t.isLiteral(load(path.node.right, state))
           ) {
             countChange(state);
-            path.get('right')
-            .replaceWith(t.cloneDeep(state[path.node.right.name]));
+            rightPath.replaceWith(t.cloneDeep(load(path.node.right, state)));
           }
           if (
-            path.get('right').isLiteral() ||
-            path.get('right').isMemberExpression() ||
-            path.get('right').isObjectExpression() ||
-            path.get('right').isArrayExpression()
+            rightPath.isLiteral() ||
+            rightPath.isMemberExpression() ||
+            rightPath.isObjectExpression() ||
+            rightPath.isArrayExpression()
           ) {
-            // console.log(`${name} ${JSON.stringify(path.get('right').node)}`);
-            state[name] = path.node.right;
+            store(name, state, rightPath);
           }
           else {
-            state[name] = null;
+            store(name, state, null);
           }
 
           if (!path.scope.__names) {
@@ -915,13 +922,11 @@ export default function(babel) {
         }
 
         if (
-          path.get('right').isFunctionExpression() ||
-          path.get('right').isObjectExpression() ||
-          path.get('right').isArrayExpression()
+          rightPath.isFunctionExpression() ||
+          rightPath.isObjectExpression() ||
+          rightPath.isArrayExpression()
         ) {
-          // console.log('store', stringifyMember(path.node.left));
-          memberStore(path.get('left'), state, path.node.right);
-          // console.log(JSON.stringify(state));
+          memberStore(leftPath, state, path.node.right);
         }
 
         if (
@@ -969,9 +974,7 @@ export default function(babel) {
     IfStatement: {
       exit(path, state) {
         const r = path.get('test').evaluate();
-        // console.log('ifStatement');
         const maybeMember = memberLookup(path.node.test, state);
-        // console.log(stringifyMember(path.node.test), JSON.stringify(maybeMember));
         if (
           r.confident && r.value ||
           t.isLiteral(path.node.test) && path.node.test.value ||
@@ -1020,8 +1023,8 @@ export default function(babel) {
           path.scope.__names
         ) {
           for (let name of path.scope.__names) {
-            if (state[name]) {
-              state[name] = null;
+            if (load(name, state)) {
+              store(name, state, null);
             }
           }
           path.scope.__names = [];
@@ -1054,38 +1057,11 @@ export default function(babel) {
           return;
         }
 
-        // let stack = [];
-        // let node = path.node;
-        // while (t.isMemberExpression(node)) {
-        //   if (node.computed) {return;}
-        //   if (!t.isIdentifier(node.property)) {return;}
-        //   stack.unshift(node.property.name);
-        //   node = node.object;
-        // }
-        // // path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(`${String(stack)}`)));
-        // if (!t.isIdentifier(node)) {return;}
-        // let value = state[node.name];
-        // // path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(`${JSON.stringify(node.name)}`)));
-        // // path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(`${JSON.stringify(value)}`)));
-        // while (t.isObjectExpression(value) && stack.length > 0) {
-        //   const name = stack.shift();
-        //   // path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(`${name}`)));
-        //   value = value.properties.find(prop => prop.key.name === name);
-        //   if (value) {
-        //     value = value.value;
-        //   }
-        // }
-        // // path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(`${stack.length} ${JSON.stringify(value)}`)));
-        // if (t.isLiteral(value)) {
-        //   countChange(state);
-        //   path.replaceWith(t.cloneDeep(value));
-        // }
         let value = memberLookup(path, state);
         if (
           t.isLiteral(value) ||
           t.isIdentifier(value) ||
           t.isMemberExpression(value)
-          // t.isFunctionExpression(value)
         ) {
           countChange(state);
           path.replaceWith(t.cloneDeep(value));
@@ -1108,9 +1084,6 @@ export default function(babel) {
       },
     },
     Identifier(path, state) {
-      // if (path.findParent(t.isLoop)) {
-      //   return;
-      // }
       if (
         (
           !path.findParent(n => t.isLoop(n)) ||
@@ -1134,7 +1107,7 @@ export default function(babel) {
         path.parent.key !== path.node
       ) {
         if (
-          t.isFunctionExpression(state[path.node.name]) &&
+          t.isFunctionExpression(load(path.node, state)) &&
           (
             !path.parentPath.isArrayExpression() ||
             !path.parentPath.isObjectExpression()
@@ -1144,9 +1117,9 @@ export default function(babel) {
         }
         if (
           (
-            t.isArrayExpression(state[path.node.name]) ||
-            t.isObjectExpression(state[path.node.name]) ||
-            t.isFunctionExpression(state[path.node.name])
+            t.isArrayExpression(load(path, state)) ||
+            t.isObjectExpression(load(path, state)) ||
+            t.isFunctionExpression(load(path, state))
           ) &&
           path.findParent(n => t.isForOfStatement(n)) &&
           !path
@@ -1155,19 +1128,19 @@ export default function(babel) {
         ) {
           return;
         }
-        if (state[path.node.name] && isStatic(state[path.node.name], state)) {
+        if (load(path, state) && isStatic(load(path, state), state)) {
           countChange(state);
-          path.replaceWith(t.cloneDeep(state[path.node.name]));
+          path.replaceWith(t.cloneDeep(load(path, state)));
         }
         if (
-          state[path.node.name] &&
+          load(path, state) &&
           (
-            t.isIdentifier(state[path.node.name]) ||
-            t.isMemberExpression(state[path.node.name])
+            t.isIdentifier(load(path, state)) ||
+            t.isMemberExpression(load(path, state))
           )
         ) {
           countChange(state);
-          path.replaceWith(t.cloneDeep(state[path.node.name]));
+          path.replaceWith(t.cloneDeep(load(path, state)));
         }
         else if (
           memberLookup(path.node, state) &&
@@ -1214,23 +1187,16 @@ export default function(babel) {
     },
     BinaryExpression: {
       exit(path, state) {
-        // const e = path.evaluate();
-        // if (e.confident) {
-        // }
         if (
           path.get('left').isLiteral() && path.get('right').isLiteral() &&
-          (path.node.operator === '*' || path.node.operator === '+')
+          (
+            path.node.operator === '*' ||
+            path.node.operator === '+'
+          )
         ) {
-          const e = path.evaluate();
-          if (e.confident && typeof e.value === 'number') {
-            countChange(state);
-            path.replaceWith(t.numericLiteral(e.value));
-          }
-          if (e.confident && typeof e.value === 'string') {
-            countChange(state);
-            path.replaceWith(t.stringLiteral(e.value));
-          }
+          evaluateToLiteral(path, state);
         }
+
         if (
           path.get('left').isBinaryExpression() &&
           path.get('left.right').isLiteral() && path.get('right').isLiteral() &&
@@ -1240,22 +1206,12 @@ export default function(babel) {
           )
         ) {
           countChange(state);
-          path.replaceWith(
-            t.binaryExpression(
-              path.node.left.operator,
-              path.node.left.left,
-              t.binaryExpression(path.node.operator, path.node.left.right, path.node.right)
-            )
-          );
-          const e = path.get('right').evaluate();
-          if (e.confident && typeof e.value === 'number') {
-            countChange(state);
-            path.get('right').replaceWith(t.numericLiteral(e.value));
-          }
-          if (e.confident && typeof e.value === 'string') {
-            countChange(state);
-            path.get('right').replaceWith(t.stringLiteral(e.value));
-          }
+          const node = path.node;
+          const left = node.left;
+          const right = node.right;
+          const operator = left.operator;
+          const rightExpr = t.binaryExpression(operator, left.right, right);
+          path.replaceWith(t.binaryExpression(operator, left.left, rightExpr));
         }
       },
     },
