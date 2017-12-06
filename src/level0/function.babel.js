@@ -96,7 +96,7 @@ export default function(babel) {
     if (path.isLiteral()) {
       return true;
     }
-    else if (path.isIdentifier() && isStatic(load(path, state), state)) {
+    else if (path.isIdentifier() && isStatic(load(path.node, state), state)) {
       return true;
     }
     else if (path.isMemberExpression() && isStatic(memberLookup(path.node, state), state)) {
@@ -387,36 +387,34 @@ export default function(babel) {
           return;
         }
         if (
-          t.isIdentifier(init) &&
-          load(init, state) &&
-          t.isLiteral(load(init, state))
+          t.isIdentifier(initPath) &&
+          load(initPath, state) &&
+          t.isLiteral(load(initPath, state))
         ) {
           countChange(state);
+          // Pass the node init so load returns a node instead of an optional
+          // path, if the path is available.
           initPath.replaceWith(t.cloneDeep(load(init, state)));
         }
         if (
-          t.isIdentifier(init) &&
-          t.isFunctionExpression(load(init, state))
+          t.isIdentifier(initPath) &&
+          t.isFunctionExpression(load(initPath, state))
         ) {
-          store(id, state, load(init, state));
+          store(id, state, load(initPath, state));
         }
         if (
-          t.isMemberExpression(init) &&
+          t.isMemberExpression(initPath) &&
           t.isFunctionExpression(memberLookup(initPath, state))
         ) {
           store(id, state, memberLookup(initPath, state));
         }
-        if (t.isFunctionExpression(init)) {
-          store(id, state, init);
-        }
-        if (t.isNumericLiteral(init)) {
-          store(id, state, init);
-        }
-        if (t.isArrayExpression(init)) {
-          store(id, state, init);
-        }
-        if (t.isObjectExpression(init)) {
-          store(id, state, init);
+        if (
+          t.isFunctionExpression(initPath) ||
+          t.isNumericLiteral(initPath) ||
+          t.isArrayExpression(initPath) ||
+          t.isObjectExpression(initPath)
+        ) {
+          store(id, state, initPath);
         }
       }
     },
@@ -454,11 +452,10 @@ export default function(babel) {
           const name = path.node.left.name;
           if (
             rightPath.isIdentifier() &&
-            t.isLiteral(load(path.node.right, state))
+            t.isLiteral(load(rightPath, state))
           ) {
             countChange(state);
-            rightPath
-            .replaceWith(t.cloneDeep(load(path.node.right, state)));
+            rightPath.replaceWith(t.cloneDeep(load(rightPath, state)));
           }
           if (rightPath.isFunctionExpression()) {
             store(name, state, rightPath);
@@ -559,8 +556,10 @@ export default function(babel) {
     },
     ConditionalExpression: {
       exit(path, state) {
-        const test = path.node.test;
-        const maybeMember = memberLookup(path.get('test'), state);
+        const testPath = path.get('test');
+        const testObjectPath = testPath.get('object');
+        const testObjectObjectPath = testObjectPath.get('object');
+        const maybeMember = memberLookup(testPath, state);
         if (
           t.isFunctionExpression(maybeMember) ||
           t.isLiteral(maybeMember) && maybeMember.value
@@ -569,18 +568,18 @@ export default function(babel) {
           path.replaceWith(path.node.consequent);
         }
         if (
-          t.isConditionalExpression(path.node) &&
-          t.isMemberExpression(test) &&
+          t.isConditionalExpression(path) &&
+          t.isMemberExpression(testPath) &&
           (
-            t.isIdentifier(test.object) &&
-            t.isFunctionExpression(load(test.object, state)) ||
-            t.isIdentifier(test.object) &&
-            t.isLiteral(load(test.object, state)) ||
-            t.isIdentifier(test.object) &&
-            t.isArrayExpression(load(test.object, state)) ||
-            t.isMemberExpression(test.object) &&
-            t.isIdentifier(test.object.object) &&
-            t.isFunctionExpression(load(test.object.object, state))
+            t.isIdentifier(testObjectPath) &&
+            t.isFunctionExpression(load(testObjectPath, state)) ||
+            t.isIdentifier(testObjectPath) &&
+            t.isLiteral(load(testObjectPath, state)) ||
+            t.isIdentifier(testObjectPath) &&
+            t.isArrayExpression(load(testObjectPath, state)) ||
+            t.isMemberExpression(testObjectPath) &&
+            t.isIdentifier(testObjectObjectPath) &&
+            t.isFunctionExpression(load(testObjectObjectPath, state))
           )
         ) {
           countChange(state);
@@ -623,10 +622,10 @@ export default function(babel) {
               );
             const argPath = path.get(`arguments.${i}`);
             if (
-              argPath.isIdentifier() &&
-              t.isFunctionExpression(load(args[i], state))
+              t.isIdentifier(argPath) &&
+              t.isFunctionExpression(load(argPath, state))
             ) {
-              store(p, state, load(args[i], state));
+              store(p, state, load(argPath, state));
             }
             if (argPath.isLiteral()) {
               store(p, state, argPath);
@@ -758,29 +757,29 @@ export default function(babel) {
     VariableDeclarator: {
       exit(path, state) {
         const id = path.node.id;
-        const init = path.node.init;
+        const initPath = path.get('init');
         if (
-          t.isIdentifier(init) &&
+          t.isIdentifier(initPath) &&
           (
-            t.isIdentifier(load(init, state)) ||
-            t.isMemberExpression(load(init, state))
+            t.isIdentifier(load(initPath, state)) ||
+            t.isMemberExpression(load(initPath, state))
           )
         ) {
           countChange(state);
-          path.get('init').replaceWith(t.cloneDeep(load(init, state)));
+          initPath.replaceWith(t.cloneDeep(load(initPath, state)));
         }
         if (path.getStatementParent().isLoop()) {
           store(id, state, null);
         }
         if (
-          t.isLiteral(init) ||
-          t.isObjectExpression(init) ||
-          t.isArrayExpression(init) ||
-          t.isIdentifier(init) ||
-          t.isMemberExpression(init) ||
-          t.isFunction(init)
+          t.isLiteral(initPath) ||
+          t.isObjectExpression(initPath) ||
+          t.isArrayExpression(initPath) ||
+          t.isIdentifier(initPath) ||
+          t.isMemberExpression(initPath) ||
+          t.isFunction(initPath)
         ) {
-          store(id, state, path.get('init'));
+          store(id, state, initPath);
         }
       },
     },
@@ -934,23 +933,23 @@ export default function(babel) {
           }
         }
         if (
-          rightPath.isIdentifier() &&
+          t.isIdentifier(rightPath) &&
           (
-            t.isIdentifier(load(path.node.right, state)) ||
-            t.isMemberExpression(load(path.node.right, state))
+            t.isIdentifier(load(rightPath, state)) ||
+            t.isMemberExpression(load(rightPath, state))
           )
         ) {
           countChange(state);
-          rightPath.replaceWith(t.cloneDeep(load(path.node.right, state)));
+          rightPath.replaceWith(t.cloneDeep(load(rightPath, state)));
         }
         if (leftPath.isIdentifier()) {
           const name = path.node.left.name;
           if (
             rightPath.isIdentifier() &&
-            t.isLiteral(load(path.node.right, state))
+            t.isLiteral(load(rightPath, state))
           ) {
             countChange(state);
-            rightPath.replaceWith(t.cloneDeep(load(path.node.right, state)));
+            rightPath.replaceWith(t.cloneDeep(load(rightPath, state)));
           }
           if (
             rightPath.isLiteral() ||
@@ -1115,7 +1114,7 @@ export default function(babel) {
         path.parent.key !== path.node
       ) {
         if (
-          t.isFunctionExpression(load(path.node, state)) &&
+          t.isFunctionExpression(load(path, state)) &&
           (
             !path.parentPath.isArrayExpression() ||
             !path.parentPath.isObjectExpression()
@@ -1138,7 +1137,7 @@ export default function(babel) {
         }
         if (load(path, state) && isStatic(load(path, state), state)) {
           countChange(state);
-          path.replaceWith(t.cloneDeep(load(path, state)));
+          path.replaceWith(t.cloneDeep(load(path.node, state)));
         }
         if (
           load(path, state) &&
@@ -1148,7 +1147,7 @@ export default function(babel) {
           )
         ) {
           countChange(state);
-          path.replaceWith(t.cloneDeep(load(path, state)));
+          path.replaceWith(t.cloneDeep(load(path.node, state)));
         }
         else if (
           memberLookup(path.node, state) &&
