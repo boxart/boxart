@@ -703,6 +703,57 @@ export default function(babel) {
     }
   };
 
+  const memberAssign = (state, path) => {
+    state.__assignedMembers = state.__assignedMembers || new Map();
+    state.__assignedMembers.set(path.node.left, path);
+  };
+
+  const forEachMemberAssigns = (state, pathNode, fn) => {
+    state.__assignedMembers = state.__assignedMembers || new Map();
+    for (const [key, _path] of state.__assignedMembers.entries()) {
+      if (
+        _path &&
+        (
+          matchesMember(key, pathNode, true) ||
+          matchesMember(key, pathNode) ||
+          matchesMember(_path.node.right, pathNode, true) ||
+          matchesMember(_path.node.right, pathNode)
+        )
+      ) {
+        fn(key, _path);
+      }
+    }
+  };
+
+  const removeRedundantMemberAssign = (state, path) => {
+    forEachMemberAssigns(state, path.node.left, (key, _path) => {
+      if (
+        key !== path.node.left &&
+        matchesMember(key, path.node.left) &&
+        (() => {
+          let noCall = true;
+          traverse.cheap(_path.node.right, node => {
+            if (t.isCallExpression(node) && node.arguments.length > 0) {
+              noCall = false;
+            }
+          });
+          return noCall;
+        })() &&
+        path.findParent(t.isBlockStatement).node === traverse.NodePath.get(_path).findParent(t.isBlockStatement).node
+      ) {
+        countChange(state);
+        traverse.NodePath.get(_path).remove();
+      }
+      state.__assignedMembers.set(key, null);
+    });
+  };
+
+  const clearMemberAssign = (state, pathNode) => {
+    forEachMemberAssigns(state, pathNode, (key, _path) => {
+      state.__assignedMembers.set(key, null);
+    });
+  };
+
   const lookupAndOps = {
     VariableDeclarator: {
       exit(path, state) {
@@ -936,38 +987,8 @@ export default function(babel) {
             t.isMemberExpression(path.node.left)
           )
         ) {
-          state.__assignedMembers = state.__assignedMembers || new Map();
-          for (const [key, _path] of state.__assignedMembers.entries()) {
-            if (
-              _path &&
-              (
-                matchesMember(key, path.node.left, true) ||
-                matchesMember(key, path.node.left) ||
-                matchesMember(_path.node.right, path.node.left, true) ||
-                matchesMember(_path.node.right, path.node.left)
-              )
-            ) {
-              if (
-                key !== path.node.left &&
-                matchesMember(key, path.node.left) &&
-                (() => {
-                  let noCall = true;
-                  traverse.cheap(_path.node.right, node => {
-                    if (t.isCallExpression(node) && node.arguments.length > 0) {
-                      noCall = false;
-                    }
-                  });
-                  return noCall;
-                })() &&
-                path.findParent(t.isBlockStatement).node === traverse.NodePath.get(_path).findParent(t.isBlockStatement).node
-              ) {
-                countChange(state);
-                traverse.NodePath.get(_path).remove();
-              }
-              state.__assignedMembers.set(key, null);
-            }
-          }
-          state.__assignedMembers.set(path.node.left, path);
+          removeRedundantMemberAssign(state, path);
+          memberAssign(state, path);
         }
       }
     },
@@ -1067,20 +1088,7 @@ export default function(babel) {
           path.replaceWith(t.cloneDeep(value));
         }
 
-        state.__assignedMembers = state.__assignedMembers || new Map();
-        for (const [key, _path] of state.__assignedMembers.entries()) {
-          if (
-            _path &&
-            (
-              matchesMember(key, path.node, true) ||
-              matchesMember(key, path.node) ||
-              matchesMember(_path.node.right, path.node, true) ||
-              matchesMember(_path.node.right, path.node)
-            )
-          ) {
-            state.__assignedMembers.set(key, null);
-          }
-        }
+        clearMemberAssign(state, path.node);
       },
     },
     Identifier(path, state) {
@@ -1169,20 +1177,7 @@ export default function(babel) {
         ) &&
         path.parent.key !== path.node
       ) {
-        state.__assignedMembers = state.__assignedMembers || new Map();
-        for (const [key, _path] of state.__assignedMembers.entries()) {
-          if (
-            _path &&
-            (
-              matchesMember(key, path.node, true) ||
-              matchesMember(key, path.node) ||
-              matchesMember(_path.node.right, path.node, true) ||
-              matchesMember(_path.node.right, path.node)
-            )
-          ) {
-            state.__assignedMembers.set(key, null);
-          }
-        }
+        clearMemberAssign(state, path.node);
       }
     },
     BinaryExpression: {
