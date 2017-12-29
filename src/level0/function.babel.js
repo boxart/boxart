@@ -2196,8 +2196,6 @@ export default function(babel) {
             path.traverse(setNames, newNames);
           },
         });
-
-        path.skip();
       },
     }
   };
