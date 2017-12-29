@@ -1590,11 +1590,16 @@ export default function(babel) {
           return;
         }
         const bMember = t.cloneDeep(path.node.callee);
-        traverse.cheap(bMember, node => {
-          if (t.isMemberExpression(node) && t.isIdentifier(node.object)) {
-            node.object = state.bId;
-          }
-        });
+        if (t.isIdentifier(bMember)) {
+          bMember.name = state.bId.name;
+        }
+        else {
+          traverse.cheap(bMember, node => {
+            if (t.isMemberExpression(node) && t.isIdentifier(node.object)) {
+              node.object = state.bId;
+            }
+          });
+        }
         const toB = t.memberExpression(path.node.callee, t.identifier('toB'));
         const resultId = '_result' + (toBResult++);
         const cond = t.callExpression(
@@ -2037,9 +2042,10 @@ export default function(babel) {
         // const lerp = function(t, b, e) {
         //   return (e - b) * Math.min(1, t) + b;
         // };
+        const lerpId = path.scope.generateUidIdentifier('lerp');
         path.getStatementParent().insertBefore(
           t.variableDeclaration('const', [
-            t.variableDeclarator(t.identifier('lerp'), t.functionExpression(
+            t.variableDeclarator(lerpId, t.functionExpression(
               null,
               [t.identifier('t'), t.identifier('b'), t.identifier('e')],
               t.blockStatement([
@@ -2076,7 +2082,7 @@ export default function(babel) {
         toBPath.traverse(toBOrLerp, {
           aId: path.node.argument,
           bId: t.identifier('b'),
-          lerpId: t.identifier('lerp'),
+          lerpId: lerpId,
           original: state[path.node.argument.name],
           parent: path.getFunctionParent().node,
         });
