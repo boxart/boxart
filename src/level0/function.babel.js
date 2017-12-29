@@ -1312,7 +1312,8 @@ export default function(babel) {
       // id = ...
       if (
         t.isAssignmentExpression(path.parent) &&
-        path.parent.left === path.node
+        path.parent.left === path.node &&
+        t.isIdentifier(path)
       ) {
         const id = path.node.name;
         if (!(state[id] || {}).node) {
@@ -1324,7 +1325,9 @@ export default function(babel) {
         path.findParent(parentPath => parentPath.isVariableDeclarator())
         .node.id.name !== path.node.name
       ) {
-        const declId = path.findParent(parentPath => parentPath.isVariableDeclarator()).node.id.name;
+        const declId = path
+        .findParent(parentPath => parentPath.isVariableDeclarator())
+        .node.id.name;
         const id = path.node.name;
         if ((state[id] || {}).node) {
           if (!(state[declId] || {}).node) {
@@ -1372,12 +1375,44 @@ export default function(babel) {
           state[id].refsFrom.push('__member_expression__');
         // }
       }
+      // otherId[id] = ...
+      if (
+        path.getStatementParent().isExpressionStatement() &&
+        path.getStatementParent().get('expression').isAssignmentExpression() &&
+        path.findParent(t.isAssignmentExpression).get('left').isMemberExpression() &&
+        path.findParent(parent => (
+          parent.node === path.findParent(t.isAssignmentExpression).node.left
+        )) &&
+        t.isMemberExpression(path.parent) &&
+        path.parent.property === path.node &&
+        path.parent.computed
+      ) {
+        const id = path.node.name;
+        if (!(state[id] || {}).node) {
+          state[id] = {node: path.node, refs: [], refsFrom: []};
+        }
+        state[id].refsFrom.push('__computed_member__');
+      }
+      // return ... id ...
       if (path.getStatementParent().isReturnStatement()) {
         const id = path.node.name;
         if (!(state[id] || {}).node) {
           state[id] = {node: path.node, refs: [], refsFrom: []};
         }
         state[id].refsFrom.push('__return__');
+      }
+      // method(... id ...)
+      if (
+        path.findParent(t.isCallExpression) &&
+        path.findParent(p => (
+          t.isCallExpression(p.parent) &&
+          p.parent.arguments.indexOf(p.node) !== -1
+        ))
+      ) {
+        const id = path.node.name;
+        if ((state[id] || {}).node) {
+          state[id].refsFrom.push('__call_argument__');
+        }
       }
     },
   };
@@ -1392,11 +1427,13 @@ export default function(babel) {
     },
     Identifier(path, state) {
       if (
+        path.parent &&
         path.parent.id === path.node
       ) {
         // path.getStatementParent().insertBefore(t.expressionStatement(t.stringLiteral(`${path.node.nodeame}: ${String((state[path.node.name] || {refsFrom: []}).refsFrom.length)}`)));
       }
       if (
+        path.parent &&
         (
           path.parent.id === path.node ||
           t.isAssignmentExpression(path.parent) &&
