@@ -1208,6 +1208,29 @@ export default function(babel) {
         }
       }
 
+      if (path.parent.object === path.node) {
+        if (
+          load(path, state) &&
+          (
+            t.isIdentifier(load(path, state)) ||
+            t.isMemberExpression(load(path, state))
+          )
+        ) {
+          countChange(state);
+          path.replaceWith(t.cloneDeep(load(path.node, state)));
+        }
+        else if (
+          memberLookup(path.node, state) &&
+          (
+            t.isIdentifier(memberLookup(path.node, state)) ||
+            t.isMemberExpression(memberLookup(path.node, state))
+          )
+        ) {
+          countChange(state);
+          path.replaceWith(t.cloneDeep(memberLookup(path.node, state)));
+        }
+      }
+
       if (
         path.parent.id !== path.node &&
         (
