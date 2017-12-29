@@ -843,6 +843,16 @@ export default function(babel) {
     },
     CallExpression: {
       exit(path, state) {
+        // // Evaluate static Math.* methods
+        // if (
+        //   t.isMemberExpression(path.node.callee) &&
+        //   t.isIdentifier(path.node.callee.object) &&
+        //   t.isIdentifier(path.node.callee.property) &&
+        //   path.node.callee.object.name === 'Math'
+        // ) {
+        //   evaluateToLiteral(path, state);
+        // }
+
         // Turn a entries call on a static object expression into an array of
         // key value pairs.
         if (
@@ -1222,7 +1232,10 @@ export default function(babel) {
           path.get('left').isLiteral() && path.get('right').isLiteral() &&
           (
             path.node.operator === '*' ||
-            path.node.operator === '+'
+            path.node.operator === '+' ||
+            path.node.operator === '-' ||
+            path.node.operator === '/' ||
+            path.node.operator === '%'
           )
         ) {
           evaluateToLiteral(path, state);
