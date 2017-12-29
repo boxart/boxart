@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "babel-loader": "^7.1.2",
+    "babel-standalone": "^6.26.0",
     "jest": "20"
   }
 }
