@@ -1208,7 +1208,16 @@ export default function(babel) {
         }
       }
 
-      if (path.parent.object === path.node) {
+      if (
+        (
+          !path.findParent(n => t.isLoop(n)) ||
+          path.findParent(t.isForOfStatement) &&
+          path.find(p => (
+            t.isForOfStatement(p.parent) && p.node === p.parent.right
+          ))
+        ) &&
+        path.parent.object === path.node
+      ) {
         if (
           load(path, state) &&
           (
@@ -1404,15 +1413,16 @@ export default function(babel) {
       // method(... id ...)
       if (
         path.findParent(t.isCallExpression) &&
-        path.findParent(p => (
+        path.find(p => (
           t.isCallExpression(p.parent) &&
           p.parent.arguments.indexOf(p.node) !== -1
         ))
       ) {
         const id = path.node.name;
-        if ((state[id] || {}).node) {
-          state[id].refsFrom.push('__call_argument__');
+        if (!(state[id] || {}).node) {
+          state[id] = {node: path.node, refs: [], refsFrom: []};
         }
+        state[id].refsFrom.push('__call_argument__');
       }
     },
   };
