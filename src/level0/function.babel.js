@@ -220,6 +220,17 @@ export default function(babel) {
       // console.log(`replace ${stringifyMember(path.node)} ${value.type}`);
       path.replaceWith(t.cloneDeep(value));
     }
+    if (t.isFunctionDeclaration(value)) {
+      const node = t.cloneDeep(value);
+      node.type = 'FunctionExpression';
+      path.replaceWith(node);
+      // console.log(value);
+      // path.replaceWith(t.functionExpression(
+      //   null,
+      //   value.params.slice(),
+      //   t.cloneDeep(value.body)
+      // ));
+    }
   };
 
   const memberStore = (path, state, rhs) => {
@@ -366,6 +377,32 @@ export default function(babel) {
           path.scope.__names = [];
         }
       },
+    },
+    FunctionDeclaration: {
+      enter(path, state) {
+        const id = path.node.id;
+        if (!id || !id.name) {return;}
+
+        path.scope.rename(id.name);
+        inlineNames[id.name] = true;
+        if (path.getStatementParent().isLoop()) {
+          store(id, state, null);
+          path.skip();
+        }
+      },
+      exit(path, state) {
+        const id = path.node.id;
+        if (!id || !id.name) {return;}
+
+        const value = path.node;
+        const valuePath = path;
+        if (path.getStatementParent().isLoop()) {
+          store(id, state, null);
+          return;
+        }
+
+        store(id, state, valuePath);
+      }
     },
     VariableDeclarator: {
       enter(path, state) {
