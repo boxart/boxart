@@ -1424,6 +1424,32 @@ export default function(babel) {
         }
         state[id].refsFrom.push('__call_argument__');
       }
+      // id(...)
+      if (
+        path.findParent(t.isCallExpression) &&
+        path.find(p => t.isCallExpression(p.parent) && p.parent.callee === p.node) &&
+        (
+          t.isCallExpression(path.parent) ||
+          t.isMemberExpression(path.parent) && path.parent.object === path.node
+        )
+      ) {
+        const id = path.node.name;
+        if (!(state[id] || {}).node) {
+          state[id] = {node: path.node, refs: [], refsFrom: []};
+        }
+        state[id].refsFrom.push('__callee__');
+      }
+      // if (... id ...) {
+      if (
+        path.findParent(t.isIfStatement) &&
+        path.find(p => t.isIfStatement(p.parent) && p.parent.test === p.node)
+      ) {
+        const id = path.node.name;
+        if (!(state[id] || {}).node) {
+          state[id] = {node: path.node, refs: [], refsFrom: []};
+        }
+        state[id].refsFrom.push('__if_statement__');
+      }
     },
   };
 
