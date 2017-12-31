@@ -6,6 +6,10 @@ const webpack = require('webpack');
 
 const run = require('./run-module');
 
+function sha1Hash(content) {
+  return require('crypto').createHash('sha1').update(content).digest('hex');
+}
+
 class FunctionCompilePlugin {
   level0Rule() {
     return FunctionCompilePlugin.level0Rule();
@@ -27,7 +31,19 @@ class FunctionCompilePlugin {
         loaderContext.compileBoxartFunction = function(resource, cb) {
           let childCompilation;
           let compilationPlugins;
-          const compilerName = basename(resource);
+          let resourceId;
+          let entry;
+          if (typeof resource === 'object') {
+            resourceId = sha1Hash(resource.resource + resource.source);
+            entry = `${
+              require.resolve('./function-compile-loader')
+            }!${resource.resource}?${resourceId}`;
+          }
+          else {
+            resourceId = basename(resource);
+            entry = resource;
+          }
+          const compilerName = 'boxartFunction-' + resourceId;
           const child = compilation.createChildCompiler(compilerName, {
             filename: '[name].js',
           }, [
@@ -40,6 +56,11 @@ class FunctionCompilePlugin {
                   childCompilation = compilation;
                   childCompilation.plugin('normal-module-loader', function(loaderContext) {
                     loaderContext._inBoxartFunction = true;
+                    if (typeof resource === 'object')
+                      loaderContext.boxartSource = function() {
+                        return resource.source;
+                      };
+                    }
                   });
                 });
 
@@ -56,7 +77,7 @@ class FunctionCompilePlugin {
             },
             new SingleEntryPlugin(
               compiler.options.context,
-              resource,
+              entry,
               '__function_compile_plugin__'
             ),
             new webpack.DefinePlugin({
@@ -112,9 +133,9 @@ class FunctionCompilePlugin {
 
 FunctionCompilePlugin.level0Rule = () => (
   {
-    test: /level0\/(?:animate|present|update)\.js$/,
+    test: /level0\/(?:animate|present|update)(?:[^\/]*)\.js$/,
     include: [join(__dirname, '../..')],
-    loader: FunctionCompilePlugin.runtime(),
+    use: FunctionCompilePlugin.runtime(),
   }
 );
 
