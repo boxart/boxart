@@ -24,6 +24,7 @@
  */
 
 const compileRegistry = require('./compile-registry');
+const inlined = compileRegistry.inlined;
 
 /**
  * Create an animate function that calls the passed function argument with t,
@@ -31,12 +32,12 @@ const compileRegistry = require('./compile-registry');
  *
  * @function value
  */
-function value(fn) {
+const value = inlined(function value(fn) {
   const f = function(t, state, begin, end, data) {
     return fn(t, state, begin, end, data);
   };
   return f;
-};
+});
 
 /**
  * Create a function with the output of another animate call and a a-to-b
@@ -44,7 +45,7 @@ function value(fn) {
  *
  * @function a
  */
-function toB(fn, toBFn) {
+const toB = inlined(function toB(fn, toBFn) {
   const f = function(t, state, begin, end, data) {
     return fn(t, state, begin, end, data);
   };
@@ -52,7 +53,7 @@ function toB(fn, toBFn) {
     return toBFn(b, t, state, begin, end, data);
   };
   return f;
-};
+});
 
 /**
  * Create a function with the output of another animate call and an eq
@@ -61,7 +62,7 @@ function toB(fn, toBFn) {
  *
  * @function done
  */
-function done(fn, doneFn) {
+const done = inlined(function done(fn, doneFn) {
   const f = function(t, state, begin, end, data) {
     return fn(t, state, begin, end, data);
   };
@@ -69,7 +70,7 @@ function done(fn, doneFn) {
     return doneFn(t, state, begin, end, data);
   };
   return f;
-};
+});
 
 /**
  * Create an animate function that calls the passed function and returns the
@@ -78,7 +79,7 @@ function done(fn, doneFn) {
  *
  * @function lerp
  */
-function lerp(fn) {
+const lerp = inlined(function lerp(fn) {
   return done(
     toB(
       fn,
@@ -90,7 +91,7 @@ function lerp(fn) {
     ),
     function(t) {return t >= 1;}
   );
-};
+});
 
 /**
  * Create an animate function that calls each function in the given array with
@@ -99,7 +100,7 @@ function lerp(fn) {
  *
  * @function union
  */
-function union(set) {
+const union = inlined(function union(set) {
   const f = function(t, state, begin, end, data) {
     for (const value of Object.values(set)) {
       value(t, state, begin, end, data);
@@ -126,23 +127,19 @@ function union(set) {
     return result;
   };
   return f;
-};
+});
 
-function unary(op) {
-  return function(fn) {
-    return value(function(t, state, begin, end, data) {
-      return op(fn(t, state, begin, end, data));
-    });
-  };
-}
+const unary = inlined(function unary(op, fn) {
+  return value(function(t, state, begin, end, data) {
+    return op(fn(t, state, begin, end, data));
+  });
+});
 
-function binary(op) {
-  return function(fn1, fn2) {
-    return value(function(t, state, begin, end, data) {
-      return op(fn1(t, state, begin, end, data), fn2(t, state, begin, end, data));
-    })
-  };
-}
+const binary = inlined(function binary(op, fn1, fn2) {
+  return value(function(t, state, begin, end, data) {
+    return op(fn1(t, state, begin, end, data), fn2(t, state, begin, end, data));
+  });
+});
 
 /**
  * Create a function that returns the absolute value of the returned result of
@@ -150,9 +147,9 @@ function binary(op) {
  *
  * @function abs
  */
-function abs(fn) {
-  return unary(function(v) {return Math.abs(v);})(fn);
-}
+const abs = inlined(function abs(fn) {
+  return unary(function(v) {return Math.abs(v);}, fn);
+});
 
 /**
  * Create a function that returns the sumed value of the returned results of
@@ -160,9 +157,9 @@ function abs(fn) {
  *
  * @function add
  */
-function add(fn1, fn2) {
-  return binary(function(a, b) {return a + b;})(fn1, fn2);
-}
+const add = inlined(function add(fn1, fn2) {
+  return binary(function(a, b) {return a + b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns the difference of the returned results of
@@ -170,9 +167,9 @@ function add(fn1, fn2) {
  *
  * @function sub
  */
-function sub(fn1, fn2) {
-  return binary(function(a, b) {return a - b;})(fn1, fn2);
-}
+const sub = inlined(function sub(fn1, fn2) {
+  return binary(function(a, b) {return a - b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns the multiplied value of the returned results
@@ -180,9 +177,9 @@ function sub(fn1, fn2) {
  *
  * @function mul
  */
-function mul(fn1, fn2) {
-  return binary(function(a, b) {return a * b;})(fn1, fn2);
-}
+const mul = inlined(function mul(fn1, fn2) {
+  return binary(function(a, b) {return a * b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns the divided value of the returned results of
@@ -190,9 +187,9 @@ function mul(fn1, fn2) {
  *
  * @function div
  */
-function div(fn1, fn2) {
-  return binary(function(a, b) {return a / b;})(fn1, fn2);
-}
+const div = inlined(function div(fn1, fn2) {
+  return binary(function(a, b) {return a / b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns the remainder of the divided of the returned
@@ -200,9 +197,9 @@ function div(fn1, fn2) {
  *
  * @function mod
  */
-function mod(fn1, fn2) {
-  return binary(function(a, b) {return a % b;})(fn1, fn2);
-}
+const mod = inlined(function mod(fn1, fn2) {
+  return binary(function(a, b) {return a % b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns the minimum value of the returned results of
@@ -210,9 +207,9 @@ function mod(fn1, fn2) {
  *
  * @function min
  */
-function min(fn) {
-  return unary(function(v) {return Math.min(v);})(fn);
-}
+const min = inlined(function min(fn1, fn2) {
+  return binary(function(a, b) {return Math.min(a, b);}, fn1, fn2);
+});
 
 /**
  * Create a function that returns the maximum value of the returned results of
@@ -220,9 +217,9 @@ function min(fn) {
  *
  * @function max
  */
-function max(fn) {
-  return unary(function(v) {return Math.max(v);})(fn);
-}
+const max = inlined(function max(fn1, fn2) {
+  return binary(function(a, b) {return Math.max(a, b);}, fn1, fn2);
+});
 
 /**
  * Create a function that returns whether the returned results of
@@ -230,9 +227,9 @@ function max(fn) {
  *
  * @function eq
  */
-function eq(fn1, fn2) {
-  return binary(function(a, b) {return a === b;})(fn1, fn2);
-}
+const eq = inlined(function eq(fn1, fn2) {
+  return binary(function(a, b) {return a === b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns whether the returned results of
@@ -240,9 +237,9 @@ function eq(fn1, fn2) {
  *
  * @function ne
  */
-function ne(fn1, fn2) {
-  return binary(function(a, b) {return a !== b;})(fn1, fn2);
-}
+const ne = inlined(function ne(fn1, fn2) {
+  return binary(function(a, b) {return a !== b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns whether the returned result of
@@ -250,9 +247,9 @@ function ne(fn1, fn2) {
  *
  * @function lt
  */
-function lt(fn1, fn2) {
-  return binary(function(a, b) {return a < b;})(fn1, fn2);
-}
+const lt = inlined(function lt(fn1, fn2) {
+  return binary(function(a, b) {return a < b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns whether the returned result of the first
@@ -261,9 +258,9 @@ function lt(fn1, fn2) {
  *
  * @function lte
  */
-function lte(fn1, fn2) {
-  return binary(function(a, b) {return a <= b;})(fn1, fn2);
-}
+const lte = inlined(function lte(fn1, fn2) {
+  return binary(function(a, b) {return a <= b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns whether the returned result of
@@ -272,9 +269,9 @@ function lte(fn1, fn2) {
  *
  * @function gt
  */
-function gt(fn1, fn2) {
-  return binary(function(a, b) {return a > b;})(fn1, fn2);
-}
+const gt = inlined(function gt(fn1, fn2) {
+  return binary(function(a, b) {return a > b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns whether the returned result of the first
@@ -283,36 +280,36 @@ function gt(fn1, fn2) {
  *
  * @function gte
  */
-function gte(fn1, fn2) {
-  return binary(function(a, b) {return a >= b;})(fn1, fn2);
-}
+const gte = inlined(function gte(fn1, fn2) {
+  return binary(function(a, b) {return a >= b;}, fn1, fn2);
+});
 
 /**
  * Create a function that returns the given constant value.
  *
  * @function constant
  */
-function constant(c) {
+const constant = inlined(function constant(c) {
   return value(function() {return c;});
-}
+});
 
 /**
  * Create a function that returns the passed t value.
  *
  * @function t
  */
-function t() {
+const t = inlined(function t() {
   return value(function(t) {return t;});
-}
+});
 
 /**
  * Create a function that returns the passed state value.
  *
  * @function state
  */
-function state() {
+const state = inlined(function state() {
   return value(function(t, state) {return state;});
-}
+});
 
 /**
  * Create a function that passes a value between the begin and end value based
@@ -322,29 +319,29 @@ function state() {
  *
  * @function at
  */
-function at(pos) {
+const at = inlined(function at(pos) {
   return lerp(function(t, state, begin, end) {
     return (end - begin) * pos + begin;
   });
-}
+});
 
 /**
  * Create a function that returns the begin value.
  *
  * @function begin
  */
-function begin() {
+const begin = inlined(function begin() {
   return at(0);
-}
+});
 
 /**
  * Create a function that returns the end value.
  *
  * @function end
  */
-function end() {
+const end = inlined(function end() {
   return at(1);
-}
+});
 
 /**
  * Create a function that returns the value portionally based on t between the
@@ -352,13 +349,13 @@ function end() {
  *
  * @function to
  */
-function to(a, b) {
+const to = inlined(function to(a, b) {
   return toB(function(t, state, begin, end, data) {
     return a.toB(b, t, state, begin, end, data);
   }, function(_b, t, state, begin, end, data) {
     return a.toB(_b, t, state, begin, end, data);
   });
-}
+});
 
 /**
  * Create a function that calls the passed second argument with the key member
@@ -366,11 +363,11 @@ function to(a, b) {
  *
  * @function get
  */
-function get(key, fn) {
+const get = inlined(function get(key, fn) {
   return value(function(t, state, begin, end, data) {
     return fn(t, state[key], begin[key], end[key], data);
   });
-}
+});
 
 /**
  * Create a function that sets the key's member of the state value with the
@@ -378,12 +375,12 @@ function get(key, fn) {
  *
  * @function set
  */
-function set(key, fn) {
+const set = inlined(function set(key, fn) {
   return value(function(t, state, begin, end, data) {
     state[key] = fn(t, state, begin, end, data);
     return state;
   });
-}
+});
 
 /**
  * Create a function that iterates the given object's keys and values, setting
@@ -392,7 +389,7 @@ function set(key, fn) {
  *
  * @function object
  */
-function object(obj) {
+const object = inlined(function object(obj) {
   const f = function(t, state, begin, end, data) {
     for (const [key, value] of Object.entries(obj)) {
       state[key] = value(t, state[key], begin[key], end[key], data);
@@ -407,7 +404,7 @@ function object(obj) {
     return state;
   };
   return f;
-}
+});
 
 /**
  * Create a function that calls the given function with every indexed member of
@@ -415,14 +412,14 @@ function object(obj) {
  *
  * @function array
  */
-function array(fn) {
+const array = inlined(function array(fn) {
   return value(function(t, state, begin, end, data) {
     for (let i = 0; i < state.length; i++) {
       fn(t, state[i], begin[i], end[i], data);
     }
     return state;
   });
-}
+});
 
 /**
  * Create a function that transforms t by one function and passing that into
@@ -430,13 +427,13 @@ function array(fn) {
  *
  * @function easing
  */
-function easing(fn, tfn) {
+const easing = inlined(function easing(fn, tfn) {
   return done(function(t, state, begin, end, data) {
     return fn(tfn(t, state, begin, end, data), state, begin, end, data);
   }, function(t, state, begin, end, data) {
     return tfn(t, state, begin, end, data) >= 1;
   });
-}
+});
 
 /**
  * Create a function that calls the passed function with t transformed by a
@@ -444,9 +441,9 @@ function easing(fn, tfn) {
  *
  * @function easeIn
  */
-function easeIn(fn) {
+const easeIn = inlined(function easeIn(fn) {
   return easing(fn, function(t) {return t * t * t;});
-}
+});
 
 /**
  * Create a function that calls the passed function with t transformed by a
@@ -454,9 +451,9 @@ function easeIn(fn) {
  *
  * @function easeOut
  */
-function easeOut(fn) {
+const easeOut = inlined(function easeOut(fn) {
   return easing(fn, function(t) {return (t - 1) * (t - 1) * (t - 1) + 1;});
-}
+});
 
 /**
  * Create a function that calls the passed function with t transformed by a
@@ -464,7 +461,7 @@ function easeOut(fn) {
  *
  * @function easeInOut
  */
-function easeInOut(fn) {
+const easeInOut = inlined(function easeInOut(fn) {
   return easing(fn, function(t) {
     let out;
     if (t < 0.5) {
@@ -475,7 +472,7 @@ function easeInOut(fn) {
     }
     return out;
   });
-}
+});
 
 // const bezierC = ast.context(({
 //   func, mul, l, r, w,
@@ -597,9 +594,9 @@ function easeInOut(fn) {
  *
  * @function duration
  */
-function duration(fn, length) {
+const duration = inlined(function duration(fn, length) {
   return easing(fn, function(t) {return 1 / t});
-}
+});
 
 /**
  * Creates a function that calls the passed function with t transformed by
@@ -607,9 +604,9 @@ function duration(fn, length) {
  *
  * @function loop
  */
-function loop(fn, loop) {
+const loop = inlined(function loop(fn, loop) {
   return easing(fn, function(t) {return t / loop % 1;});
-}
+});
 
 /**
  * Creates a function that calls the passed function with until the until
@@ -617,9 +614,9 @@ function loop(fn, loop) {
  *
  * @function repeat
  */
-function repeat(fn, until) {
+const repeat = inlined(function repeat(fn, until) {
   return done(fn, until);
-}
+});
 
 // const keyframesSum = _frames => {
 //   if (Array.isArray(_frames)) {
@@ -635,7 +632,7 @@ function repeat(fn, until) {
 //     };
 //   }
 // };
-function keyframes(frames) {
+const keyframes = inlined(function keyframes(frames) {
   const f = function(_t, state, begin, end, data) {
     const sum = (function(frames) {
       let s = 0;
@@ -692,9 +689,9 @@ function keyframes(frames) {
   };
 
   return f;
-}
+});
 
-function frame(timer, fn) {
+const frame = inlined(function frame(timer, fn) {
   const f = function(t, state, begin, end, data) {
     return fn(timer(t), state, begin, end, data);
   };
@@ -713,27 +710,27 @@ function frame(timer, fn) {
   f.t = function() {return timer.t();};
   f.fn = fn;
   return f;
-}
+});
 
-function timer(unit) {
+const timer = inlined(function timer(unit) {
   const timer = function(t) {return t / unit;};
   timer.t = function() {return unit;};
   timer.toB = null;
   timer.done = null;
   return timer;
-}
+});
 
-function seconds(seconds) {
+const seconds = inlined(function seconds(seconds) {
   return timer(seconds);
-}
+});
 
-function ms(ms) {
+const ms = inlined(function ms(ms) {
   return timer(ms / 1000);
-}
+});
 
-function percent(percent) {
+const percent = inlined(function percent(percent) {
   return timer(percent / 100);
-}
+});
 
 module.exports = compileRegistry({
   value,
