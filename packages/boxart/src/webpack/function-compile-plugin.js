@@ -56,7 +56,7 @@ class FunctionCompilePlugin {
                   childCompilation = compilation;
                   childCompilation.plugin('normal-module-loader', function(loaderContext) {
                     loaderContext._inBoxartFunction = true;
-                    if (typeof resource === 'object')
+                    if (typeof resource === 'object') {
                       loaderContext.boxartSource = function() {
                         return resource.source;
                       };
@@ -119,7 +119,7 @@ class FunctionCompilePlugin {
                 delete compilation.assets[key];
               });
 
-              cb(null, output && output.default || output);
+              cb(null, output && output.default || output, source);
             }
             catch (e) {
               return cb(e);

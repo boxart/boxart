@@ -32,7 +32,7 @@ const inlined = compileRegistry.inlined;
  *
  * @function value
  */
-const value = inlined(function value(fn) {
+let value = inlined(function value(fn) {
   const f = function(t, state, begin, end, data) {
     return fn(t, state, begin, end, data);
   };
@@ -45,7 +45,7 @@ const value = inlined(function value(fn) {
  *
  * @function a
  */
-const toB = inlined(function toB(fn, toBFn) {
+let toB = inlined(function toB(fn, toBFn) {
   const f = function(t, state, begin, end, data) {
     return fn(t, state, begin, end, data);
   };
@@ -62,9 +62,12 @@ const toB = inlined(function toB(fn, toBFn) {
  *
  * @function done
  */
-const done = inlined(function done(fn, doneFn) {
+let done = inlined(function done(fn, doneFn) {
   const f = function(t, state, begin, end, data) {
     return fn(t, state, begin, end, data);
+  };
+  f.toB = function(b, t, state, begin, end, data) {
+    return fn.toB ? fn.toB(b, t, state, begin, end, data) : fn(t, state, begin, end, data);
   };
   f.done = function(t, state, begin, end, data) {
     return doneFn(t, state, begin, end, data);
@@ -79,7 +82,7 @@ const done = inlined(function done(fn, doneFn) {
  *
  * @function lerp
  */
-const lerp = inlined(function lerp(fn) {
+let lerp = inlined(function lerp(fn) {
   return done(
     toB(
       fn,
@@ -100,7 +103,7 @@ const lerp = inlined(function lerp(fn) {
  *
  * @function union
  */
-const union = inlined(function union(set) {
+let union = inlined(function union(set) {
   const f = function(t, state, begin, end, data) {
     for (const value of Object.values(set)) {
       value(t, state, begin, end, data);
@@ -129,13 +132,13 @@ const union = inlined(function union(set) {
   return f;
 });
 
-const unary = inlined(function unary(op, fn) {
+let unary = inlined(function unary(op, fn) {
   return value(function(t, state, begin, end, data) {
     return op(fn(t, state, begin, end, data));
   });
 });
 
-const binary = inlined(function binary(op, fn1, fn2) {
+let binary = inlined(function binary(op, fn1, fn2) {
   return value(function(t, state, begin, end, data) {
     return op(fn1(t, state, begin, end, data), fn2(t, state, begin, end, data));
   });
@@ -147,7 +150,7 @@ const binary = inlined(function binary(op, fn1, fn2) {
  *
  * @function abs
  */
-const abs = inlined(function abs(fn) {
+let abs = inlined(function abs(fn) {
   return unary(function(v) {return Math.abs(v);}, fn);
 });
 
@@ -157,7 +160,7 @@ const abs = inlined(function abs(fn) {
  *
  * @function add
  */
-const add = inlined(function add(fn1, fn2) {
+let add = inlined(function add(fn1, fn2) {
   return binary(function(a, b) {return a + b;}, fn1, fn2);
 });
 
@@ -167,7 +170,7 @@ const add = inlined(function add(fn1, fn2) {
  *
  * @function sub
  */
-const sub = inlined(function sub(fn1, fn2) {
+let sub = inlined(function sub(fn1, fn2) {
   return binary(function(a, b) {return a - b;}, fn1, fn2);
 });
 
@@ -177,7 +180,7 @@ const sub = inlined(function sub(fn1, fn2) {
  *
  * @function mul
  */
-const mul = inlined(function mul(fn1, fn2) {
+let mul = inlined(function mul(fn1, fn2) {
   return binary(function(a, b) {return a * b;}, fn1, fn2);
 });
 
@@ -187,7 +190,7 @@ const mul = inlined(function mul(fn1, fn2) {
  *
  * @function div
  */
-const div = inlined(function div(fn1, fn2) {
+let div = inlined(function div(fn1, fn2) {
   return binary(function(a, b) {return a / b;}, fn1, fn2);
 });
 
@@ -197,7 +200,7 @@ const div = inlined(function div(fn1, fn2) {
  *
  * @function mod
  */
-const mod = inlined(function mod(fn1, fn2) {
+let mod = inlined(function mod(fn1, fn2) {
   return binary(function(a, b) {return a % b;}, fn1, fn2);
 });
 
@@ -207,7 +210,7 @@ const mod = inlined(function mod(fn1, fn2) {
  *
  * @function min
  */
-const min = inlined(function min(fn1, fn2) {
+let min = inlined(function min(fn1, fn2) {
   return binary(function(a, b) {return Math.min(a, b);}, fn1, fn2);
 });
 
@@ -217,7 +220,7 @@ const min = inlined(function min(fn1, fn2) {
  *
  * @function max
  */
-const max = inlined(function max(fn1, fn2) {
+let max = inlined(function max(fn1, fn2) {
   return binary(function(a, b) {return Math.max(a, b);}, fn1, fn2);
 });
 
@@ -227,7 +230,7 @@ const max = inlined(function max(fn1, fn2) {
  *
  * @function eq
  */
-const eq = inlined(function eq(fn1, fn2) {
+let eq = inlined(function eq(fn1, fn2) {
   return binary(function(a, b) {return a === b;}, fn1, fn2);
 });
 
@@ -237,7 +240,7 @@ const eq = inlined(function eq(fn1, fn2) {
  *
  * @function ne
  */
-const ne = inlined(function ne(fn1, fn2) {
+let ne = inlined(function ne(fn1, fn2) {
   return binary(function(a, b) {return a !== b;}, fn1, fn2);
 });
 
@@ -247,7 +250,7 @@ const ne = inlined(function ne(fn1, fn2) {
  *
  * @function lt
  */
-const lt = inlined(function lt(fn1, fn2) {
+let lt = inlined(function lt(fn1, fn2) {
   return binary(function(a, b) {return a < b;}, fn1, fn2);
 });
 
@@ -258,7 +261,7 @@ const lt = inlined(function lt(fn1, fn2) {
  *
  * @function lte
  */
-const lte = inlined(function lte(fn1, fn2) {
+let lte = inlined(function lte(fn1, fn2) {
   return binary(function(a, b) {return a <= b;}, fn1, fn2);
 });
 
@@ -269,7 +272,7 @@ const lte = inlined(function lte(fn1, fn2) {
  *
  * @function gt
  */
-const gt = inlined(function gt(fn1, fn2) {
+let gt = inlined(function gt(fn1, fn2) {
   return binary(function(a, b) {return a > b;}, fn1, fn2);
 });
 
@@ -280,7 +283,7 @@ const gt = inlined(function gt(fn1, fn2) {
  *
  * @function gte
  */
-const gte = inlined(function gte(fn1, fn2) {
+let gte = inlined(function gte(fn1, fn2) {
   return binary(function(a, b) {return a >= b;}, fn1, fn2);
 });
 
@@ -289,7 +292,7 @@ const gte = inlined(function gte(fn1, fn2) {
  *
  * @function constant
  */
-const constant = inlined(function constant(c) {
+let constant = inlined(function constant(c) {
   return value(function() {return c;});
 });
 
@@ -298,7 +301,7 @@ const constant = inlined(function constant(c) {
  *
  * @function t
  */
-const t = inlined(function t() {
+let t = inlined(function t() {
   return value(function(t) {return t;});
 });
 
@@ -307,7 +310,7 @@ const t = inlined(function t() {
  *
  * @function state
  */
-const state = inlined(function state() {
+let state = inlined(function state() {
   return value(function(t, state) {return state;});
 });
 
@@ -319,7 +322,7 @@ const state = inlined(function state() {
  *
  * @function at
  */
-const at = inlined(function at(pos) {
+let at = inlined(function at(pos) {
   return lerp(function(t, state, begin, end) {
     return (end - begin) * pos + begin;
   });
@@ -330,7 +333,7 @@ const at = inlined(function at(pos) {
  *
  * @function begin
  */
-const begin = inlined(function begin() {
+let begin = inlined(function begin() {
   return at(0);
 });
 
@@ -339,7 +342,7 @@ const begin = inlined(function begin() {
  *
  * @function end
  */
-const end = inlined(function end() {
+let end = inlined(function end() {
   return at(1);
 });
 
@@ -349,7 +352,7 @@ const end = inlined(function end() {
  *
  * @function to
  */
-const to = inlined(function to(a, b) {
+let to = inlined(function to(a, b) {
   return toB(function(t, state, begin, end, data) {
     return a.toB(b, t, state, begin, end, data);
   }, function(_b, t, state, begin, end, data) {
@@ -363,7 +366,7 @@ const to = inlined(function to(a, b) {
  *
  * @function get
  */
-const get = inlined(function get(key, fn) {
+let get = inlined(function get(key, fn) {
   return value(function(t, state, begin, end, data) {
     return fn(t, state[key], begin[key], end[key], data);
   });
@@ -375,7 +378,7 @@ const get = inlined(function get(key, fn) {
  *
  * @function set
  */
-const set = inlined(function set(key, fn) {
+let set = inlined(function set(key, fn) {
   return value(function(t, state, begin, end, data) {
     state[key] = fn(t, state, begin, end, data);
     return state;
@@ -389,7 +392,7 @@ const set = inlined(function set(key, fn) {
  *
  * @function object
  */
-const object = inlined(function object(obj) {
+let object = inlined(function object(obj) {
   const f = function(t, state, begin, end, data) {
     for (const [key, value] of Object.entries(obj)) {
       state[key] = value(t, state[key], begin[key], end[key], data);
@@ -412,10 +415,10 @@ const object = inlined(function object(obj) {
  *
  * @function array
  */
-const array = inlined(function array(fn) {
+let array = inlined(function array(fn) {
   return value(function(t, state, begin, end, data) {
     for (let i = 0; i < state.length; i++) {
-      fn(t, state[i], begin[i], end[i], data);
+      state[i] = fn(t, state[i], begin[i], end[i], data);
     }
     return state;
   });
@@ -427,7 +430,7 @@ const array = inlined(function array(fn) {
  *
  * @function easing
  */
-const easing = inlined(function easing(fn, tfn) {
+let easing = inlined(function easing(fn, tfn) {
   return done(function(t, state, begin, end, data) {
     return fn(tfn(t, state, begin, end, data), state, begin, end, data);
   }, function(t, state, begin, end, data) {
@@ -441,7 +444,7 @@ const easing = inlined(function easing(fn, tfn) {
  *
  * @function easeIn
  */
-const easeIn = inlined(function easeIn(fn) {
+let easeIn = inlined(function easeIn(fn) {
   return easing(fn, function(t) {return t * t * t;});
 });
 
@@ -451,7 +454,7 @@ const easeIn = inlined(function easeIn(fn) {
  *
  * @function easeOut
  */
-const easeOut = inlined(function easeOut(fn) {
+let easeOut = inlined(function easeOut(fn) {
   return easing(fn, function(t) {return (t - 1) * (t - 1) * (t - 1) + 1;});
 });
 
@@ -461,7 +464,7 @@ const easeOut = inlined(function easeOut(fn) {
  *
  * @function easeInOut
  */
-const easeInOut = inlined(function easeInOut(fn) {
+let easeInOut = inlined(function easeInOut(fn) {
   return easing(fn, function(t) {
     let out;
     if (t < 0.5) {
@@ -594,8 +597,8 @@ const easeInOut = inlined(function easeInOut(fn) {
  *
  * @function duration
  */
-const duration = inlined(function duration(fn, length) {
-  return easing(fn, function(t) {return 1 / t});
+let duration = inlined(function duration(fn, length) {
+  return easing(fn, function(t) {return t / length});
 });
 
 /**
@@ -604,7 +607,7 @@ const duration = inlined(function duration(fn, length) {
  *
  * @function loop
  */
-const loop = inlined(function loop(fn, loop) {
+let loop = inlined(function loop(fn, loop) {
   return easing(fn, function(t) {return t / loop % 1;});
 });
 
@@ -614,7 +617,7 @@ const loop = inlined(function loop(fn, loop) {
  *
  * @function repeat
  */
-const repeat = inlined(function repeat(fn, until) {
+let repeat = inlined(function repeat(fn, until) {
   return done(fn, until);
 });
 
@@ -632,7 +635,7 @@ const repeat = inlined(function repeat(fn, until) {
 //     };
 //   }
 // };
-const keyframes = inlined(function keyframes(frames) {
+let keyframes = inlined(function keyframes(frames) {
   const f = function(_t, state, begin, end, data) {
     const sum = (function(frames) {
       let s = 0;
@@ -691,7 +694,7 @@ const keyframes = inlined(function keyframes(frames) {
   return f;
 });
 
-const frame = inlined(function frame(timer, fn) {
+let frame = inlined(function frame(timer, fn) {
   const f = function(t, state, begin, end, data) {
     return fn(timer(t), state, begin, end, data);
   };
@@ -712,23 +715,23 @@ const frame = inlined(function frame(timer, fn) {
   return f;
 });
 
-const timer = inlined(function timer(unit) {
-  const timer = function(t) {return t / unit;};
-  timer.t = function() {return unit;};
-  timer.toB = null;
-  timer.done = null;
-  return timer;
+let timer = inlined(function timer(unit) {
+  const _timer = function(t) {return t / unit;};
+  _timer.t = function() {return unit;};
+  _timer.toB = null;
+  _timer.done = null;
+  return _timer;
 });
 
-const seconds = inlined(function seconds(seconds) {
+let seconds = inlined(function seconds(seconds) {
   return timer(seconds);
 });
 
-const ms = inlined(function ms(ms) {
+let ms = inlined(function ms(ms) {
   return timer(ms / 1000);
 });
 
-const percent = inlined(function percent(percent) {
+let percent = inlined(function percent(percent) {
   return timer(percent / 100);
 });
 

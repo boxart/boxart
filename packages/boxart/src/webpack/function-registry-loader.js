@@ -2,7 +2,7 @@ const astRegistry = require('../level0/ast-registry');
 
 module.exports = function(source) {
   this.cacheable(true);
-  this.addDependency(this.resource);
+  // this.addDependency(this.resource);
 
   if (this._inBoxartFunction) {
     return source;

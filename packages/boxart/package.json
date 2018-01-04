@@ -1,0 +1,38 @@
+{
+  "name": "boxart",
+  "version": "0.2.0-alpha.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "clean": "rm -r dist lib",
+    "babel": "cd src && babel -d ../lib --presets env --ignore '*animate.js,*present.js,*update.js,*.test.js' */*.js",
+    "build": "yarn run babel && yarn run render-functions",
+    "render-functions": "webpack && node scripts/render-function -i tmp/level0/animate.js -o lib/level0 && node scripts/render-function -i tmp/level0/present.js -o lib/level0 && node scripts/render-function -i tmp/level0/update.js -o lib/level0",
+    "prepublishOnly": "yarn run clean && yarn run build && yarn run test",
+    "test": "jest-webpack"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Michael \"Z\" Goddard",
+    "email": "mzgoddard@gmail.com"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.1",
+    "hard-source-webpack-plugin": "^0.4.9",
+    "jest": "20",
+    "jest-webpack": "^0.3.0",
+    "jsdoc-to-markdown": "^3.0.0",
+    "lerna": "^2.5.1",
+    "raw-loader": "^0.5.1",
+    "webpack": "^3.8.1",
+    "webpack-dev-server": "^2.9.3",
+    "webpack-if": "^0.1.2"
+  },
+  "dependencies": {
+    "babel-standalone": "^6.26.0"
+  }
+}

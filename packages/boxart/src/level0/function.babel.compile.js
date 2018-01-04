@@ -41,20 +41,20 @@ function _fillInFunctions(registry) {
   };
 }
 
-function _stringifyPreludeArgs(args) {
+function _stringifyPreludeArgs(args, stringified = []) {
   try {
     return args
       .map(function(arg) {
         if (arg && arg.meta) {
           return [
-            _stringifyPrelude(arg.meta.origin),
-            _stringifyPreludeArgs(arg.meta.args),
+            _stringifyPrelude(arg.meta.origin, stringified),
+            _stringifyPreludeArgs(arg.meta.args, stringified),
             String(arg.meta.origin),
           ]
           .filter(Boolean)
           .join(';');
         }
-        return _stringifyPrelude(arg);
+        return _stringifyPrelude(arg, stringified);
       })
       .filter(Boolean)
       .join(';')
@@ -63,24 +63,37 @@ function _stringifyPreludeArgs(args) {
   return '';
 }
 
-function _stringifyPrelude(fn) {
+function _stringifyPrelude(fn, stringified = []) {
   if (typeof fn === 'function') {
+    if (fn.meta) {
+      if (stringified.indexOf(fn.meta.origin) !== -1) {
+        return _stringifyPreludeArgs(fn.meta.args, stringified);
+      }
+      stringified.push(fn.meta.origin);
+      return [_stringifyPrelude(fn.meta.origin, stringified),
+        _stringifyPreludeArgs(fn.meta.args, stringified),
+        String(fn.meta.origin)].filter(Boolean).join(';');
+    }
     try {
       const result = fn();
       if (typeof result === 'function' && result.meta) {
-        return `${_stringifyPrelude(result.meta.origin)};
-          ${_stringifyPreludeArgs(result.meta.args)};
-          ${String(result.meta.origin)};`;
+        if (stringified.indexOf(result.meta.origin) !== -1) {
+          return _stringifyPreludeArgs(result.meta.args, stringified);
+        }
+        stringified.push(result.meta.origin);
+        return [_stringifyPrelude(result.meta.origin, stringified),
+          _stringifyPreludeArgs(result.meta.args, stringified),
+          String(result.meta.origin)].filter(Boolean).join(';');
       }
     }
     catch (e) {}
   }
   if (fn && typeof fn === 'object') {
     if (Array.isArray(fn)) {
-      return _stringifyPreludeArgs(fn);
+      return _stringifyPreludeArgs(fn, stringified);
     }
     else if (fn.constructor.name === 'Object') {
-      return _stringifyPreludeArgs(Object.values(fn));
+      return _stringifyPreludeArgs(Object.values(fn), stringified);
     }
   }
   return '';
@@ -89,7 +102,7 @@ function _stringifyPrelude(fn) {
 function _stringify(fn) {
   if (typeof fn === 'function') {
     if (fn.meta) {
-      return `${_stringify(fn.meta.origin)}(${
+      return `(${_stringify(fn.meta.origin)})(${
         fn.meta.args.map(_stringify).join(', ')
       })`;
     }
@@ -119,7 +132,9 @@ export default function compile(fn, registry) {
   // stored by compile-registry, write all the functions used to build up fn.
   // And finally call the top function with all its arguments and the arguments
   // arguments.
-  const body = `function compiled() {${_stringifyPrelude(fn)}; return ${_stringify(fn)}}`;
+  const body = `function compiled() {${
+    _stringifyPrelude(fn, fn.meta ? [fn.meta.origin] : [])
+  }; return ${_stringify(fn)}}`;
   // "Safety" pass.
   const result1 = transform(body, {
     plugins: [
@@ -140,13 +155,16 @@ export default function compile(fn, registry) {
   return function() {
     let f;
     try {
-      f = new Function(`return ${result.code}`)()();
       if (!fn.meta) {
         // Functions with meta are the result of a boxart function factory.
         // Without meta, we know we are given a factory. Try calling the
         // factory. If there is an error we shall assume it is not safe to
         // stringify it.
+        f = new Function(`return ${result.code}`)()();
         f();
+      }
+      else {
+        f = new Function(`return ${result.code}`)();
       }
     }
     catch (e) {
@@ -164,10 +182,12 @@ export default function compile(fn, registry) {
       // It'd only be a part of the function set for a given animation
       // component.
       f.toString = function() {
-        throw new Error(
+        const err = new Error(
           `Could not compile a boxart function. A function may not have been ` +
-          `able to be inlined.\nOriginal Error:\n${e.stack || e}`
+          `able to be inlined.\n\nSource:\n${result.code}\n\nOriginal Error:\n${e.stack || e}`
         );
+        err.code = result.code;
+        throw err;
       };
     }
     return f;

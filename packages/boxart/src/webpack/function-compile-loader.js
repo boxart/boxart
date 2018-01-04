@@ -1,5 +1,5 @@
 const {transform} = require('babel-core');
-const boxartPlugin = require('../level0/function.babel');
+const boxartPlugin = require('../level0/function.babel').default;
 
 function compileSource(source) {
   return transform(source, {
@@ -21,6 +21,12 @@ function _stringify(obj) {
     }}`;
   }
   else if (typeof obj === 'function') {
+    if (obj.compile) {
+      return `(${obj.compile().toString()})()`;
+    }
+    if (obj.meta && obj.meta.origin) {
+      return `(${obj.meta.origin.toString()})()`;
+    }
     return obj.toString();
   }
   return JSON.stringify(obj);
@@ -30,13 +36,20 @@ function verifyBindings(source) {
   function mustHaveBinding({types: t}) {
     return {
       visitor: {
-        Identifier(path, scope) {
+        Identifier(path) {
+          if (
+            [
+              'module', 'String', 'Function', 'Object', 'Math', 'Number',
+              'Boolean', 'JSON',
+            ].indexOf(path.node.name) !== -1) {
+            return;
+          }
           if (
             t.isMemberExpression(path.parent) && path.parent.object === path.node ||
             t.isMemberExpression(path.parent) && path.parent.computed ||
             !t.isMemberExpression(path.parent)
           ) {
-            if (!scope.getBinding(path.node.name)) {
+            if (!path.scope.getBinding(path.node.name)) {
               throw new Error(`"${path.node.name} is not defined in boxart function."`);
             }
           }
@@ -45,16 +58,22 @@ function verifyBindings(source) {
     };
   }
 
-  transform(source, {
-    plugins: [mustHaveBinding],
-  });
+  try {
+    transform(source, {
+      plugins: [mustHaveBinding],
+    });
+  }
+  catch (e) {
+    e.code = source;
+    throw e;
+  }
 
   return source;
 }
 
 module.exports = function(source) {
   this.cacheable(true);
-  this.addDependency(this.resource);
+  // this.addDependency(this.resource);
 
   if (this.boxartSource) {
     return this.boxartSource();
@@ -72,7 +91,7 @@ module.exports = function(source) {
   this.compileBoxartFunction({
     resource: this.resource,
     source: transformed,
-  }, function(error, animations) {
+  }, (error, animations, builtSource) => {
     if (error) {
       return done(error);
     }
@@ -84,12 +103,16 @@ module.exports = function(source) {
     try {
       return done(
         null,
-        `module.exports = ${verifyBindings(_stringify(animations))};`
+        (`module.exports = ${_stringify(animations)};`)
       );
     }
     catch (e) {
-      this.emitWarning(e);
-      return done(null, source);
+      const builtSourceComment = (e.code || builtSource)
+      .split('\n')
+      .map(line => `// ${line}`)
+      .join('\n');
+      this.emitWarning(e.stack || e);
+      return done(null, `${builtSourceComment}\n\n${source}`);
     }
   });
 };

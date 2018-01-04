@@ -187,7 +187,7 @@ const step = function(_this, dt) {
   const {animate, present} = _this.animation;
   data.t += dt;
   animate(data.t, data.state, data.begin, data.end);
-  if (animate.eq && animate.eq(data.t, data.state, data.begin, data.end)) {
+  if (animate.done && animate.done(data.t, data.state, data.begin, data.end)) {
     transitionStep(_this, DONE);
   }
   else {
@@ -219,6 +219,7 @@ class AnimatedState {
   }
 
   set(state, order, resolve = noop) {
+    console.log('set', arguments);
     this.state = state;
     transitionStep(this, PREPARE);
     // Set resolve after stepping the transitionState. Stepping may call the

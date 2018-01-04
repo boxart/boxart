@@ -1,14 +1,14 @@
 const compileRegistry = require('./compile-registry');
 const inlined = compileRegistry.inlined;
 
-const value = inlined(function value(fn) {
+let value = inlined(function value(fn) {
   const f = function(element, state, data) {
     return fn(element, state, data);
   };
   return f;
 });
 
-const union = inlined(function union(set) {
+let union = inlined(function union(set) {
   const f = function(element, state, data) {
     for (const value of set) {
       value(element, state, data);
@@ -34,151 +34,151 @@ const union = inlined(function union(set) {
   return f;
 });
 
-const constant = inlined(function constant(c) {
+let constant = inlined(function constant(c) {
   return value(function() {return c;});
 });
 
-const key = inlined(function key(key) {
+let key = inlined(function key(key) {
   return value(function(element, state) {return state[key];});
 });
 
-const unary = inlined(function unary(op, fn) {
+let unary = inlined(function unary(op, fn) {
   return value(function(state, element, data) {
     return op(fn(state, element, data));
   });
 });
 
-const binary = inlined(function binary(op, fn1, fn2) {
+let binary = inlined(function binary(op, fn1, fn2) {
   return value(function(state, element, data) {
     return op(fn1(state, element, data), fn2(state, element, data));
   });
 });
 
-const abs = inlined(function abs(fn) {
+let abs = inlined(function abs(fn) {
   return unary(function(v) {return Math.abs(v);}, fn);
 });
 
-const add = inlined(function add(fn1, fn2) {
+let add = inlined(function add(fn1, fn2) {
   return binary(function(a, b) {return a + b;}, fn1, fn2);
 });
 
-const sub = inlined(function sub(fn1, fn2) {
+let sub = inlined(function sub(fn1, fn2) {
   return binary(function(a, b) {return a - b;}, fn1, fn2);
 });
 
-const mul = inlined(function mul(fn1, fn2) {
+let mul = inlined(function mul(fn1, fn2) {
   return binary(function(a, b) {return a * b;}, fn1, fn2);
 });
 
-const div = inlined(function div(fn1, fn2) {
+let div = inlined(function div(fn1, fn2) {
   return binary(function(a, b) {return a / b;}, fn1, fn2);
 });
 
-const mod = inlined(function mod(fn1, fn2) {
+let mod = inlined(function mod(fn1, fn2) {
   return binary(function(a, b) {return a % b;}, fn1, fn2);
 });
 
-const min = inlined(function min(fn1, fn2) {
+let min = inlined(function min(fn1, fn2) {
   return binary(function(a, b) {return Math.min(a, b);}, fn1, fn2);
 });
 
-const max = inlined(function max(fn1, fn2) {
+let max = inlined(function max(fn1, fn2) {
   return binary(function(a, b) {return Math.max(a, b);}, fn1, fn2);
 });
 
-const eq = inlined(function eq(fn1, fn2) {
+let eq = inlined(function eq(fn1, fn2) {
   return binary(function(a, b) {return a === b;}, fn1, fn2);
 });
 
-const ne = inlined(function ne(fn1, fn2) {
+let ne = inlined(function ne(fn1, fn2) {
   return binary(function(a, b) {return a !== b;}, fn1, fn2);
 });
 
-const lt = inlined(function lt(fn1, fn2) {
+let lt = inlined(function lt(fn1, fn2) {
   return binary(function(a, b) {return a < b;}, fn1, fn2);
 });
 
-const lte = inlined(function lte(fn1, fn2) {
+let lte = inlined(function lte(fn1, fn2) {
   return binary(function(a, b) {return a <= b;}, fn1, fn2);
 });
 
-const gt = inlined(function gt(fn1, fn2) {
+let gt = inlined(function gt(fn1, fn2) {
   return binary(function(a, b) {return a > b;}, fn1, fn2);
 });
 
-const gte = inlined(function gte(fn1, fn2) {
+let gte = inlined(function gte(fn1, fn2) {
   return binary(function(a, b) {return a >= b;}, fn1, fn2);
 });
 
-const suffix = inlined(function suffix(fn, suffix) {
+let suffix = inlined(function suffix(fn, suffix) {
   return add(fn, function() {return suffix;});
 });
 
-const em = inlined(function em(fn) {
+let em = inlined(function em(fn) {
   return suffix(fn, 'em');
 });
 
-const percent = inlined(function percent(fn) {
+let percent = inlined(function percent(fn) {
   return suffix(fn, '%');
 });
 
-const deg = inlined(function deg(fn) {
+let deg = inlined(function deg(fn) {
   return suffix(fn, 'deg');
 });
 
-const rad = inlined(function rad(fn) {
+let rad = inlined(function rad(fn) {
   return suffix(fn, 'rad');
 });
 
-const px = inlined(function px(fn) {
+let px = inlined(function px(fn) {
   return suffix(fn, 'px');
 });
 
-const rem = inlined(function rem(fn) {
+let rem = inlined(function rem(fn) {
   return suffix(fn, 'rem');
 });
 
-const vh = inlined(function vh(fn) {
+let vh = inlined(function vh(fn) {
   return suffix(fn, 'vh');
 });
 
-const vmax = inlined(function vmax(fn) {
+let vmax = inlined(function vmax(fn) {
   return suffix(fn, 'vmax');
 });
 
-const vmin = inlined(function vmin(fn) {
+let vmin = inlined(function vmin(fn) {
   return suffix(fn, 'vmin');
 });
 
-const vw = inlined(function vw(fn) {
+let vw = inlined(function vw(fn) {
   return suffix(fn, 'vw');
 });
 
-const begin = inlined(function begin(fn) {
+let begin = inlined(function begin(fn) {
   return value(function(element, state, data) {
     return fn(element, data._begin || data.begin, data);
   });
 });
 
-const end = inlined(function end(fn) {
+let end = inlined(function end(fn) {
   return value(function(element, state, data) {
     return fn(element, data._end || data.end, data);
   });
 });
 
-const to = inlined(function to(a, b) {
+let to = inlined(function to(a, b) {
   return value(function(element, state, data) {
     return sub(a, b(a))(element, state, data);
   });
 });
 
-const over = inlined(function over(a, b) {
+let over = inlined(function over(a, b) {
   return value(function(element, state, data) {
     return div(a, b(a))(element, state, data);
   });
 });
 
-const concat = inlined(function concat(ary) {
+let concat = inlined(function concat(ary) {
   return value(function(element, state, data) {
     let s = '';
     for (const value of ary) {
@@ -188,7 +188,7 @@ const concat = inlined(function concat(ary) {
   });
 });
 
-const func = inlined(function func(name, sep, ary) {
+let func = inlined(function func(name, sep, ary) {
   return concat([
     constant(name),
     constant('('),
@@ -208,67 +208,67 @@ const func = inlined(function func(name, sep, ary) {
   ]);
 });
 
-const translate = inlined(function translate(ary) {
+let translate = inlined(function translate(ary) {
   return func('translate', ', ', ary);
 });
 
-const translatex = inlined(function translatex(ary) {
+let translatex = inlined(function translatex(ary) {
   return func('translatex', ', ', ary);
 });
 
-const translatey = inlined(function translatey(ary) {
+let translatey = inlined(function translatey(ary) {
   return func('translatey', ', ', ary);
 });
 
-const translatez = inlined(function translatez(ary) {
+let translatez = inlined(function translatez(ary) {
   return func('translatez', ', ', ary);
 });
 
-const translate3d = inlined(function translate3d(ary) {
+let translate3d = inlined(function translate3d(ary) {
   return func('translate3d', ', ', ary);
 });
 
-const rotate = inlined(function rotate(ary) {
+let rotate = inlined(function rotate(ary) {
   return func('rotate', ', ', ary);
 });
 
-const rotatex = inlined(function rotatex(ary) {
+let rotatex = inlined(function rotatex(ary) {
   return func('rotatex', ', ', ary);
 });
 
-const rotatey = inlined(function rotatey(ary) {
+let rotatey = inlined(function rotatey(ary) {
   return func('rotatey', ', ', ary);
 });
 
-const rotatez = inlined(function rotatez(ary) {
+let rotatez = inlined(function rotatez(ary) {
   return func('rotatez', ', ', ary);
 });
 
-const rotate3d = inlined(function rotate3d(ary) {
+let rotate3d = inlined(function rotate3d(ary) {
   return func('rotate3d', ', ', ary);
 });
 
-const scale = inlined(function scale(ary) {
+let scale = inlined(function scale(ary) {
   return func('scale', ', ', ary);
 });
 
-const scalex = inlined(function scalex(ary) {
+let scalex = inlined(function scalex(ary) {
   return func('scalex', ', ', ary);
 });
 
-const scaley = inlined(function scaley(ary) {
+let scaley = inlined(function scaley(ary) {
   return func('scaley', ', ', ary);
 });
 
-const scalez = inlined(function scalez(ary) {
+let scalez = inlined(function scalez(ary) {
   return func('scalez', ', ', ary);
 });
 
-const scale3d = inlined(function scale3d(ary) {
+let scale3d = inlined(function scale3d(ary) {
   return func('scale3d', ', ', ary);
 });
 
-const properties = inlined(function properties(obj) {
+let properties = inlined(function properties(obj) {
   const f = function(element, state, data) {
     for (const [key, value] of Object.entries(obj)) {
       value(element[key], state, data);
@@ -295,7 +295,7 @@ const properties = inlined(function properties(obj) {
   return f;
 });
 
-const fields = inlined(function fields(obj) {
+let fields = inlined(function fields(obj) {
   const f = function(element, state, data) {
     for (const [key, value] of Object.entries(obj)) {
       element[key] = value(element[key], state, data);
@@ -322,18 +322,18 @@ const fields = inlined(function fields(obj) {
   return f;
 });
 
-const style = inlined(function style(obj) {
+let style = inlined(function style(obj) {
   return properties({style: fields(obj)});
 });
 
-const elements = inlined(function elements(obj) {
+let elements = inlined(function elements(obj) {
   const f = function(element, state, data) {
     for (const [key, value] of Object.entries(obj)) {
       const _begin = data._begin || data.begin;
       data._begin = _begin[key];
       const _end = data._end || data.end;
       data._end = _end[key];
-      value(data.data[key].element, state[key], data);
+      value(data.animated[key].element, state[key], data);
       data._begin = _begin;
       data._end = _end;
     }
@@ -342,36 +342,34 @@ const elements = inlined(function elements(obj) {
   f.store = function(store, element, data) {
     store = store || {};
     for (const [key, value] of Object.entries(obj)) {
-      store[key] = value.store(store[key], data.data[key].element, data);
+      store[key] = value.store(store[key], data.animated[key].element, data);
     }
     return store;
   };
   f.restore = function(element, store, data) {
     for (const [key, value] of Object.entries(obj)) {
-      value.restore(data.data[key].element, store[key], data);
+      value.restore(data.animated[key].element, store[key], data);
     }
     return element;
   };
   return f;
 });
 
-const elementArrays = inlined(function elementArrays(obj) {
-  const f = function(element, state, animated) {
+let elementArrays = inlined(function elementArrays(obj) {
+  const f = function(element, state, data) {
     for (const [key, value] of Object.entries(obj)) {
       const _begin = data._begin || data.begin;
       data._begin = _begin[key];
       const _end = data._end || data.end;
       data._end = _end[key];
-      const elements = data.data[key].elements;
+      const elements = data.animated[key].elements;
       const state2 = state[key];
+      const _begin2 = _begin[key];
+      const _end2 = _end[key];
       for (let i = 0; i < elements.length; i++) {
-        const _begin2 = data._begin || data.begin;
         data._begin = _begin2[i];
-        const _end2 = data._end || data.end;
         data._end = _end2[i];
         value(elements[i], state2[i], data);
-        data._begin = _begin2;
-        data._end = _end2;
       }
       data._begin = _begin;
       data._end = _end;
@@ -381,7 +379,7 @@ const elementArrays = inlined(function elementArrays(obj) {
   f.store = function(store, element, data) {
     store = store || {};
     for (const [key, value] of Object.entries(obj)) {
-      const elements = data.data[key].elements;
+      const elements = data.animated[key].elements;
       store[key] = store[key] || [];
       const store2 = store[key];
       for (let i = 0; i < elements.length; i++) {
@@ -393,7 +391,7 @@ const elementArrays = inlined(function elementArrays(obj) {
   };
   f.restore = function(element, store, data) {
     for (const [key, value] of Object.entries(obj)) {
-      const elements = data.data[key].elements;
+      const elements = data.animated[key].elements;
       const store2 = store[key];
       for (let i = 0; i < elements.length; i++) {
         value.restore(elements[i], store2[i], data);
@@ -404,7 +402,7 @@ const elementArrays = inlined(function elementArrays(obj) {
   return f;
 });
 
-const object = inlined(function object(obj) {
+let object = inlined(function object(obj) {
   const f = function(element, state, data) {
     for (const [key, value] of Object.entries(obj)) {
       const _begin = data._begin || data.begin;
