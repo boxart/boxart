@@ -2,7 +2,14 @@
   "name": "boxart",
   "version": "0.2.0-alpha.0",
   "description": "",
-  "main": "index.js",
+  "files": [
+    "lib/*/*.js",
+    "src/level0/*.js",
+    "src/level1/*.js",
+    "src/level2/*.js",
+    "src/level3/*.js",
+    "src/webpack/*.js"
+  ],
   "scripts": {
     "clean": "rm -r dist lib",
     "babel": "cd src && babel -d ../lib --presets env --ignore '*animate.js,*present.js,*update.js,*.test.js' */*.js",
