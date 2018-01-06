@@ -416,12 +416,12 @@ let object = inlined(function object(obj) {
  * @function array
  */
 let array = inlined(function array(fn) {
-  return value(function(t, state, begin, end, data) {
+  return toB(function(t, state, begin, end, data) {
     for (let i = 0; i < state.length; i++) {
       state[i] = fn(t, state[i], begin[i], end[i], data);
     }
     return state;
-  });
+  }, fn.toB || fn);
 });
 
 /**
@@ -431,9 +431,9 @@ let array = inlined(function array(fn) {
  * @function easing
  */
 let easing = inlined(function easing(fn, tfn) {
-  return done(function(t, state, begin, end, data) {
+  return done(toB(function(t, state, begin, end, data) {
     return fn(tfn(t, state, begin, end, data), state, begin, end, data);
-  }, function(t, state, begin, end, data) {
+  }, fn.toB || fn), function(t, state, begin, end, data) {
     return tfn(t, state, begin, end, data) >= 1;
   });
 });
@@ -650,7 +650,7 @@ let keyframes = inlined(function keyframes(frames) {
     let i = 0;
     for (const value of frames) {
       if (i > 0 && t <= 0) {
-        out = frames[i - 1].toB(value, t + frames[i - 1].t(), state, begin, end, data);
+        out = frames[i - 1].toB(value, (t + frames[i - 1].t()) / frames[i - 1].t(), state, begin, end, data);
         t = t + Infinity;
       }
       else {
@@ -672,13 +672,15 @@ let keyframes = inlined(function keyframes(frames) {
 
     let out = state;
     let t = Math.max(Math.min(_t * sum, sum), 0);
-    let i = 0;
+    let i;
+    // TODO: Fix plugin to be able to safely use non constant declarations.
+    i = 0;
     for (const value of frames) {
       t = t - value.t();
       if (t <= 0) {
         out = value.toB(
           frames[i + 1] || b,
-          t + value.t(),
+          (t + value.t()) / value.t(),
           state,
           begin,
           end,
