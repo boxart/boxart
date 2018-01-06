@@ -5,6 +5,9 @@ let value = inlined(function value(fn) {
   const f = function(state, element, data) {
     return fn(state, element, data);
   };
+  f.merge = function(dest, src) {
+    return typeof dest === 'undefined' ? src : dest;
+  };
   return f;
 });
 
@@ -144,6 +147,19 @@ let elementArrays = inlined(function elementArrays(obj) {
       state[key] = state2;
     }
     return state;
+  };
+  f.merge = function(dest, src) {
+    dest = dest || {};
+    for (const [key, value] of Object.entries(obj)) {
+      const _dest2 = dest[key] || [];
+      const _src2 = src[key] || [];
+      _dest2.length = _src2.length;
+      for (let i = 0; i < _src2.length; i++) {
+        _dest2[i] = value.merge ? value.merge(_dest2[i], _src2[i]) : _src2[i];
+      }
+      _dest2[key] = _dest2;
+    }
+    return dest;
   };
   return f;
 });
