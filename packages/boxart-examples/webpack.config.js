@@ -11,6 +11,9 @@ module.exports = {
     path: join(__dirname, 'dist'),
     filename: '[name].js',
   },
+  resolve: {
+    modules: ['node_modules', join(__dirname, 'node_modules')],
+  },
   module: {
     rules: [
       {
@@ -25,7 +28,8 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: [['env', {
+            // Workaround lerna linking.
+            presets: [[require('babel-preset-env'), {
               modules: false,
               loose: true,
             }]],
