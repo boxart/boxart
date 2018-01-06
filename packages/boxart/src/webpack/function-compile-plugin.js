@@ -37,7 +37,7 @@ class FunctionCompilePlugin {
             resourceId = sha1Hash(resource.resource + resource.source);
             entry = `${
               require.resolve('./function-compile-loader')
-            }!${resource.resource}?${resourceId}`;
+            }!${resource.resource}`;
           }
           else {
             resourceId = basename(resource);
@@ -97,14 +97,32 @@ class FunctionCompilePlugin {
           // webpack bug workaround
           child._plugins.compilation = compilationPlugins.concat(child._plugins.compilation);
 
+          let source;
+
+          // Uglify workaround, don't want to evaluate uglified source and then
+          // compile those with babel.
+          child.plugin('this-compilation', function(compilation) {
+            compilation.plugin('additional-assets', function(cb) {
+              const asset = childCompilation.assets['__function_compile_plugin__.js'];
+              source = asset.source();
+              cb();
+            });
+          });
+
           child.runAsChild(function(err) {
             if (err) {
               return cb(err);
             }
 
             try {
-              const asset = childCompilation.assets['__function_compile_plugin__.js'];
-              const source = asset.source();
+              // Store source in case the evaluation fails so its easier to
+              // track down the issue.
+              Object.keys(compilation.assets).forEach(key => {
+                compilation.assets[key] = {
+                  source: function() {return source;},
+                  size: function() {return source.length;},
+                };
+              });
 
               const output = new Function([
                 'let output;',
@@ -115,6 +133,9 @@ class FunctionCompilePlugin {
 
               childCompilation.fileDependencies.forEach(loaderContext.addDependency);
 
+              // Delete the source after evaluation success. Don't need the
+              // temporary compilation to be output and confuse the user when it
+              // works as expected.
               Object.keys(compilation.assets).forEach(key => {
                 delete compilation.assets[key];
               });
