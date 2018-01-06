@@ -7,7 +7,7 @@ module.exports = `<?xml version="1.0"?>
     <rect class="rect" fill="red" x="-25" y="-25" width="50" height="50" style="transform: translateX(-50px)" />
   </g>
   <g transform="translate(0 0)">
-    <rect class="rect" fill="red" x="-25" y="-25" width="50" height="50" />
+    <rect class="rect" fill="red" x="-25" y="-25" width="50" height="50" style="transform: translateX(50px)" />
   </g>
 </svg>
 `;

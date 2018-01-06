@@ -11,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.1",
     "boxart-element": "0.2.0-alpha.0",
     "boxart-functions": "0.2.0-alpha.0",
     "boxart-webpack-plugin": "0.2.0-alpha.0",
