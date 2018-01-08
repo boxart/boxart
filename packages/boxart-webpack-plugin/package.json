@@ -1,6 +1,6 @@
 {
   "name": "boxart-webpack-plugin",
-  "version": "0.2.0-alpha.0",
+  "version": "0.2.0-alpha.1",
   "description": "",
   "main": "main.js",
   "module": "module.js",
@@ -11,6 +11,6 @@
   },
   "license": "ISC",
   "dependencies": {
-    "boxart": "0.2.0-alpha.0"
+    "boxart": "^0.2.0-alpha.1"
   }
 }
