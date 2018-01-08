@@ -14,7 +14,7 @@
     "clean": "rm -r dist lib",
     "babel": "cd src && babel -d ../lib --presets env --ignore '*animate.js,*present.js,*update.js,*.test.js' */*.js",
     "build": "yarn run babel && yarn run render-functions",
-    "render-functions": "webpack && node scripts/render-function -i tmp/level0/animate.js -o lib/level0 && node scripts/render-function -i tmp/level0/present.js -o lib/level0 && node scripts/render-function -i tmp/level0/update.js -o lib/level0",
+    "render-functions": "webpack && node scripts/render-function -i tmp/level0/animate.js -o lib/level0 && node scripts/render-function -i tmp/level0/present.js -o lib/level0 && node scripts/render-function -i tmp/level0/update.js -o lib/level0 && babel lib/level0/animate.js --presets env > lib/level0/_animate.js && mv lib/level0/_animate.js lib/level0/animate.js && babel lib/level0/update.js --presets env > lib/level0/_update.js && mv lib/level0/_update.js lib/level0/update.js && babel lib/level0/present.js --presets env > lib/level0/_present.js && mv lib/level0/_present.js lib/level0/present.js",
     "prepublishOnly": "(yarn run clean || true) && yarn run build && yarn run test",
     "test": "jest-webpack"
   },
@@ -28,6 +28,7 @@
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
     "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.1",
     "babel-preset-preact": "^1.1.0",
     "hard-source-webpack-plugin": "0.5",
     "jest": "22",
