@@ -718,11 +718,11 @@ let frame = inlined(function frame(timer, fn) {
 });
 
 let timer = inlined(function timer(unit) {
-  const _timer = function(t) {return t / unit;};
-  _timer.t = function() {return unit;};
-  _timer.toB = null;
-  _timer.done = null;
-  return _timer;
+  const fTimer = function(t) {return t / unit;};
+  fTimer.t = function() {return unit;};
+  fTimer.toB = null;
+  fTimer.done = null;
+  return fTimer;
 });
 
 let seconds = inlined(function seconds(seconds) {
