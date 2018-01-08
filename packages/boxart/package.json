@@ -1,6 +1,6 @@
 {
   "name": "boxart",
-  "version": "0.2.0-alpha.1",
+  "version": "0.2.0-alpha.2",
   "description": "",
   "files": [
     "lib/*/*.js",
@@ -15,7 +15,7 @@
     "babel": "cd src && babel -d ../lib --presets env --ignore '*animate.js,*present.js,*update.js,*.test.js' */*.js",
     "build": "yarn run babel && yarn run render-functions",
     "render-functions": "webpack && node scripts/render-function -i tmp/level0/animate.js -o lib/level0 && node scripts/render-function -i tmp/level0/present.js -o lib/level0 && node scripts/render-function -i tmp/level0/update.js -o lib/level0",
-    "prepublishOnly": "yarn run clean && yarn run build && yarn run test",
+    "prepublishOnly": "(yarn run clean || true) && yarn run build && yarn run test",
     "test": "jest-webpack"
   },
   "keywords": [],
