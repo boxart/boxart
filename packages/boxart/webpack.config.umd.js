@@ -2,6 +2,8 @@ const {join} = require('path');
 
 const webpack = require('webpack');
 
+const version = require('./package.json').version;
+
 const dir = (...args) => join(__dirname, ...args);
 
 const config = c => Object.assign({
@@ -39,8 +41,8 @@ const config = c => Object.assign({
   ],
 }, c, {
   output: Object.assign({
-    path: dir('dist'),
-    filename: '[name].[chunkhash].js',
+    path: dir(`dist/${version}`),
+    filename: '[name].js',
     library: ['BoxArt', 'Core'],
     libraryTarget: 'umd',
   }, c.output),

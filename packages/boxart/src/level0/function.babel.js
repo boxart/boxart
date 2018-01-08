@@ -3795,7 +3795,16 @@ export default function(babel) {
               }`;
               reverseNames[reverse].push(key);
             }
-            traverse(path.parent, setNames, path.scope, newNames);
+            const tmpNames = {};
+            const finalNames = {};
+            let t = 0;
+            for (const key in newNames) {
+              tmpNames[key] = `_${t}`;
+              finalNames[`_${t}`] = newNames[key];
+              t += 1;
+            }
+            traverse(path.parent, setNames, path.scope, tmpNames);
+            traverse(path.parent, setNames, path.scope, finalNames);
           },
         }, path.scope);
 

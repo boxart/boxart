@@ -8,7 +8,7 @@ it.skip('property((state, element) => element.left)', () => {
   expect(update.property((state, element) => element.left)({}, {left: 1}, {})).toBe(1);
 });
 
-it('rect((state, element) => element.left)', () => {
+it('rect().asElement((state, element) => element.left)', () => {
   expect(
     update.rect()
     .asElement(
@@ -25,6 +25,34 @@ it('rect((state, element) => element.left)', () => {
       },
       {}
     )
+  ).toBe(2);
+});
+
+it('rect().asElement(object({left property("left")}))', () => {
+  console.log(
+    update.rect().asElement(
+      update.object({
+        left: update.property('left'),
+      })
+    ).toString()
+  );
+  expect(
+    update.rect().asElement(
+      update.object({
+        left: update.property('left'),
+      })
+    )(
+      {},
+      {
+        scrollLeft: 1,
+        getBoundingClientRect() {
+          return {
+            left: 1
+          };
+        }
+      },
+      {}
+    ).left
   ).toBe(2);
 });
 

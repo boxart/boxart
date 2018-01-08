@@ -54,7 +54,7 @@ class BoxartMutationObserver {
             console.error(e);
           }
         }
-        if (anim.animate && !anim.animate.eq) {
+        if (anim.animate && !anim.animate.done) {
           try {
           const animate = animate.context(anim.animate);
           if (typeof animate === 'function') {
