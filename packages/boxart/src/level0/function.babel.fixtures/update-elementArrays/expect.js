@@ -1,9 +1,9 @@
-const _elementArrays2 = function (obj) {
-  const _Object_entries_obj = Object.entries(obj);
+const elementArrays = function (obj) {
+  const Object_entries_obj = Object.entries(obj);
 
   const f = function (state, element, data) {
     state = state || {};
-    for (const [k, v] of _Object_entries_obj) {
+    for (const [k, v] of Object_entries_obj) {
       const elements = element.getElementsByClassName(k);
 
       const elementCopy = data.animated[k] || [];
@@ -22,7 +22,7 @@ const _elementArrays2 = function (obj) {
 
   f.copy = function (dest, src) {
     dest = dest || {};
-    for (const [k, v] of _Object_entries_obj) {
+    for (const [k, v] of Object_entries_obj) {
       const _dest1 = dest[k] || [];
 
       const _src1 = src[k] || [];
@@ -34,7 +34,21 @@ const _elementArrays2 = function (obj) {
     }return dest;
   };
 
+  f.merge = function (dest, src) {
+    dest = dest || {};
+    for (const [k, v] of Object_entries_obj) {
+      const _dest1 = dest[k] || [];
+
+      const _src1 = src[k] || [];
+
+      _dest1.length = _src1.length;
+      for (let i = 0; i < _src1.length; i++) {
+        _dest1[i] = v.merge ? v.merge(_dest1[i], _src1[i]) : _src1[i];
+      }dest[k] = _dest1;
+    }return dest;
+  };
+
   return f;
 };
 
-module.exports = _elementArrays2;
+module.exports = elementArrays;

@@ -53,51 +53,58 @@ class Matcher {
     this._match.last = str;
     let name = this._match.type = this.patterns.search(str);
     if (!name) {
+      this._match.animation = null;
+      this._match.id = null;
       return false;
     }
 
     let id;
+    let animationName;
+    let result;
     const typeBegin = this.patterns.begin;
     const typeEnd = this.patterns.end;
     if (name && name.endsWith('*')) {
-      id = str.substring(typeBegin, typeEnd);
       name = this.idToTypes[name];
+      result = this.results[name];
+      animationName = result.animations.search(str, typeBegin, typeEnd + 1);
+    }
+    else {
+      result = this.results[name];
+      animationName = result.animations.search(str, typeEnd);
     }
 
-    const result = this.results[name];
-    let animationName = result.animations.search(str, typeEnd);
     if (animationName) {
       if (animationName.endsWith('*')) {
         id = str.substring(result.animations.begin, result.animations.end);
         animationName = result.animations.search(str, result.animations.end);
         if (!animationName) {
-          animationName = result.animations.search(str, 0, typeBegin);
+          animationName = result.animations.search(str, 0, typeBegin + 1);
         }
       }
       else if (!id) {
         if (result.id.search(str, result.animations.end)) {
           id = str.substring(result.id.begin, result.id.end);
         }
-        else if (result.id.search(str, 0, typeBegin)) {
+        else if (result.id.search(str, 0, typeBegin + 1)) {
           id = str.substring(result.id.begin, result.id.end);
         }
       }
     }
     else {
-      animationName = result.animations.search(str, 0, typeBegin);
+      animationName = result.animations.search(str, 0, typeBegin + 1);
       if (animationName) {
         if (animationName.endsWith('*')) {
           id = str.substring(result.animations.begin, result.animations.end);
-          animationName = result.animations.search(str, result.animations.end, typeBegin);
+          animationName = result.animations.search(str, result.animations.end, typeBegin + 1);
         }
         else if (!id) {
-          if (result.id.search(str, result.animations.end, typeBegin)) {
+          if (result.id.search(str, result.animations.end, typeBegin + 1)) {
             id = str.substring(result.id.begin, result.id.end);
           }
         }
       }
       else if (!id) {
-        if (result.id.search(str, 0, typeBegin)) {
+        if (result.id.search(str, 0, typeBegin + 1)) {
           id = str.substring(result.id.begin, result.id.end);
         }
       }

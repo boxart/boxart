@@ -2,7 +2,7 @@ function constantToEasing() {
   const easing = function (t, state, begin, end, data) {
     const _t1 = t / 2;
 
-    return (1 - 0) * Math.min(1, _t1) + 0;
+    return 1 * Math.min(1, _t1) + 0;
   };
   easing.toB = function (b, t, state, begin, end, data) {
     const _t1 = t / 2;
@@ -19,4 +19,4 @@ function constantToEasing() {
   return easing;
 }
 
-module.exports = constantToEasing();
+module.exports = constantToEasing;

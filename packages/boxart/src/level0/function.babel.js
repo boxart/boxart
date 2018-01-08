@@ -3,6 +3,66 @@ const INNER_ITERATIONS = 100;
 
 const PATHS_KEY = '__boxart_ab57fe71ac0f2';
 
+const Number_properties = [
+  '__defineGetter__',
+  '__defineSetter__',
+  '__lookupGetter__',
+  '__lookupSetter__',
+  '__proto__',
+  'constructor',
+  'hasOwnProperty',
+  'isPrototypeOf',
+  'propertyIsEnumerable',
+  'toLocaleString',
+  'toString',
+  'valueOf',
+  'toExponential',
+  'toFixed',
+  'toPrecision',
+];
+
+const Array_properties = [
+  '__defineGetter__',
+  '__defineSetter__',
+  '__lookupGetter__',
+  '__lookupSetter__',
+  '__proto__',
+  'constructor',
+  'hasOwnProperty',
+  'isPrototypeOf',
+  'propertyIsEnumerable',
+  'toLocaleString',
+  'toString',
+  'valueOf',
+  'concat',
+  'copyWithin',
+  'entries',
+  'every',
+  'fill',
+  'filter',
+  'find',
+  'findIndex',
+  'forEach',
+  'includes',
+  'indexOf',
+  'join',
+  'keys',
+  'lastIndexOf',
+  'length',
+  'map',
+  'pop',
+  'push',
+  'reduce',
+  'reduceRight',
+  'reverse',
+  'shift',
+  'slice',
+  'some',
+  'sort',
+  'splice',
+  'unshift',
+];
+
 const pathsMap = new WeakMap();
 
 export default function(babel) {
@@ -528,23 +588,115 @@ export default function(babel) {
   };
 
   const crawlNames = {
-    Identifier(path, state) {
-      if (
-        t.isFunction(path.parent) ||
-        t.isVariableDeclarator(path.parent) && path.parent.id === path.node ||
-        t.isArrayPattern(path.parent)
-      ) {
-        store(path, state, path);
+    Function(path, state) {
+      path.node.params.forEach(node => {
+        if (t.isIdentifier(node)) {
+          state[node.name] = node.name;
+        }
+      });
+    },
+    'FunctionDeclaration|VariableDeclarator': (path, state) => {
+      if (t.isIdentifier(path.node.id)) {
+        state[path.node.id.name] = path.node.id.name;
       }
-    }
+    },
+    // Identifier(path, state) {
+    //   const binding = path.scope.getBinding(path.node.name);
+    //   if (binding && binding.identifier === path.node) {
+    //     path.scope.rename(path.node.name);
+    //   }
+    //   // state.bindings = state.bindings || {};
+    //   // const binding = path.scope.getBinding(path.node.name);
+    //   // if (binding &&
+    //   //   (
+    //   //     binding.identifier === path.node ||
+    //   //     binding.referencePaths.find(p => p.node === path.node) ||
+    //   //     binding.constantViolations.find(p => p.node.left === path.node)
+    //   //   )
+    //   // ) {
+    //   //   // state[path.node.name] = path.node.name;
+    //   //   const woNumbers = /^_*(\w*[a-zA-Z_]+)\d*$/.exec(path.node.name)[1];
+    //   //   state.bindings[woNumbers] = state.bindings[woNumbers] || [];
+    //   //   if (state.bindings[woNumbers].indexOf(binding) === -1) {
+    //   //     state.bindings[woNumbers].push(binding);
+    //   //   }
+    //   // }
+    // }
   };
 
   const setNames = {
-    Identifier(path, state) {
-      if (load(path, state)) {
-        path.node.name = load(path, state);
+    Function(path, state) {
+      path.node.params.forEach(node => {
+        if (t.isIdentifier(node) && state[node.name]) {
+          path.scope.rename(node.name, state[node.name]);
+        }
+      });
+    },
+    'FunctionDeclaration|VariableDeclarator': (path, state) => {
+      if (t.isIdentifier(path.node.id) && state[path.node.id.name]) {
+        path.scope.rename(path.node.id.name, state[path.node.id.name]);
       }
     },
+    // Identifier(path, state) {
+    //   // let order = -1;
+    //   // let scope = path.scope;
+    //   // const binding = path.scope.getBinding(path.node.name);
+    //   // if (binding) {
+    //   //   const woNumbers = /^_*(\w*[a-zA-Z_]+)\d*$/.exec(path.node.name)[1];
+    //   //   do {
+    //   //     for (const [key, _binding] of Object.entries(scope.bindings)) {
+    //   //       if (/^_*(\w*[a-zA-Z_]+)\d*$/.exec(path.node.name)[1] === woNumbers) {
+    //   //         order += 1;
+    //   //       }
+    //   //       if (_binding.path.node === binding.path.node) {
+    //   //         break;
+    //   //       }
+    //   //     }
+    //   //   } while (scope = scope.parent);
+    //   //
+    //   //   path.node.name = `${order === 0 ? '' : '_'}${woNumbers}${order === 0 ? '': order}`;
+    //   // }
+    //   // let binding = scope.getOwnBinding(path.node.name);
+    //   // do {
+    //   //
+    //   // } while (binding = binding.)
+    //   const binding = path.scope.getBinding(path.node.name);
+    //   if (binding &&
+    //     (
+    //       binding.identifier === path.node ||
+    //       binding.referencePaths.find(p => p.node === path.node) ||
+    //       binding.constantViolations.find(p => p.node.left === path.node)
+    //     )
+    //   ) {
+    //   //   // if (path.find(p => p.node === binding.path.node)) {
+    //   //   //   path.scope.rename(path.node.name);
+    //   //   // }
+    //     const woNumbers = /^_*(\w*[a-zA-Z_]+)\d*$/.exec(path.node.name)[1];
+    //     let order = 0;
+    //     let scope = path.scope;
+    //     while (scope = path.scope) {
+    //       for (const _binding of Object.values(scope.bindings)) {
+    //         if (binding.identifier === _binding.identifier) {
+    //
+    //         }
+    //       }
+    //     }
+    //     for (const _binding of Object.values(state.bindings[woNumbers])) {
+    //       if (_binding.identifier === binding.identifier) {
+    //         break;
+    //       }
+    //       let scope = binding.scope;
+    //       while (scope = parent.scope) {
+    //         if (Object.values(scope.bindings).indexOf(_binding) !== -1) {
+    //           order += 1;
+    //         }
+    //       }
+    //     }
+    //     // const order = state.bindings[woNumbers].indexOf(binding);
+    //     path.node.name = `${order === 0 ? '' : '_'}${woNumbers}${order === 0 ? '': order}`;
+    //     // path.node.name = state[path.node.name];
+    //   }
+    // },
   };
 
   const inlineNames = {};
@@ -1763,6 +1915,15 @@ export default function(babel) {
     if (nearA.key - nearB.key === 0) {
       const nearA = a.find(p => b.find(q => q.node === p.parent));
       const nearB = b.find(p => a.find(q => q.node === p.parent));
+      if (t.isAssignmentExpression(nearA.parent)) {
+        if (nearA.node === nearB.node) {
+          return 0;
+        }
+        else if (nearA.parent.left === nearA.node) {
+          return 1;
+        }
+        return -1;
+      }
       const aKey = t.VISITOR_KEYS[nearA.type].indexOf(nearA.key);
       const bKey = t.VISITOR_KEYS[nearB.type].indexOf(nearB.key);
       return aKey - bKey;
@@ -1776,6 +1937,10 @@ export default function(babel) {
     paths.sort(pathOrder);
     return paths;
   };
+
+  const getMemberTop = path => (
+    path.find(p => !t.isMemberExpression(p.parent))
+  );
 
   const findMemberAssignment = member => {
     if (!member) {return;}
@@ -1791,17 +1956,15 @@ export default function(babel) {
       item = item.get('object');
     }
 
+    if (!item.isIdentifier()) {return;}
+
     let assigned = findAssignment(item);
-    if (!assigned) {return;}
+    // if (!assigned) {return;}
 
-    const getMemberTop = path => (
-      path.find(p => !t.isMemberExpression(p.parent))
-    );
+    // let assignId = assignedId(assigned);
+    // if (!assignId) {return;}
 
-    let assignId = assignedId(assigned);
-    if (!assignId) {return;}
-
-    let binding = assignId.scope.getBinding(assignId.node.name);
+    let binding = item.scope.getBinding(item.node.name);
     if (!binding) {return;}
     const memberReferences = sortPaths(binding.referencePaths)
     .filter(path => (
@@ -1811,7 +1974,13 @@ export default function(babel) {
         getMemberTop(path).parentPath.isAssignmentExpression()
     ));
     const nearReferences = memberReferences
-    .filter(path => pathOrder(path, member) < 0 && pathOrder(path, assigned) > 0);
+    .filter(path => (
+      pathOrder(path, member) < 0 &&
+      (
+        assigned && pathOrder(path, assigned) > 0 ||
+        !assigned
+      )
+    ));
 
     if (nearReferences.length) {
       const lastRef = nearReferences[nearReferences.length - 1];
@@ -1821,8 +1990,11 @@ export default function(babel) {
       // member.replaceWith(t.stringLiteral());
       if (
         (
-          nearReferences.reduce((carry, ref) => (
+          assigned && nearReferences.reduce((carry, ref) => (
             carry && sameBlock(ref, assigned)
+          ), true) ||
+          !assigned && nearReferences.reduce((carry, ref) => (
+            carry && sameBlock(ref, nearReferences[0])
           ), true) ||
           sameBlock(lastRef, member)
         ) &&
@@ -1997,7 +2169,7 @@ export default function(babel) {
         }
       }
     }
-    return assigned;
+    return checkMemberSafety(assigned, member);
   };
 
   const assignedValue = path => {
@@ -2024,6 +2196,96 @@ export default function(babel) {
     }
   };
 
+  const checkObjectArraySafety = (value, until) => {
+    if (!t.isObjectExpression(value) && !t.isArrayExpression(value)) {
+      return value;
+    }
+
+    let member = assignedId(value);
+    let item = member;
+    while (t.isMemberExpression(item)) {
+      item = item.get('object');
+    }
+
+    if (!t.isIdentifier(item)) {
+      return;
+    }
+
+    const binding = until.scope.getBinding(item.node.name);
+    if (!binding) {return;}
+
+    // until = until.getStatementParent();
+
+    if (
+      binding.referencePaths
+      .find(p => (
+        (
+          p.find(q => (
+            t.isAssignmentExpression(q.parent) && q.node === q.parent.left
+          )) &&
+          matchesMember(getMemberTop(p), member, true) ||
+          matchesMember(member, getMemberTop(p), false)
+        ) &&
+        pathOrder(p, member) > 0 && pathOrder(p, until) < 0
+      ))
+    ) {
+      return;
+    }
+
+    return value;
+  };
+
+  const checkMemberSafety = (value, until, used) => {
+    if (t.isObjectExpression(value) || t.isArrayExpression(value)) {
+      return checkObjectArraySafety(value, until);
+    }
+
+    if (!t.isMemberExpression(value) && !t.isIdentifier(value)) {
+      return value;
+    }
+
+    let item = value;
+    while (t.isMemberExpression(item)) {
+      item = item.get('object');
+    }
+
+    if (!t.isIdentifier(item)) {
+      return;
+    }
+
+    const binding = until.scope.getBinding(item.node.name);
+    if (!binding) {return;}
+
+    // until = until.getStatementParent();
+
+    if (
+      (used || t.isMemberExpression(value)) &&
+      binding.referencePaths
+      .find(p => (
+        (
+          p.find(q => (
+            t.isAssignmentExpression(q.parent) && q.node === q.parent.left
+          )) &&
+          matchesMember(value, getMemberTop(p), false) ||
+          matchesMember(value, getMemberTop(p), true)
+        ) &&
+        pathOrder(p, value) > 0 && pathOrder(p, until) < 0
+      ))
+    ) {
+      return;
+    }
+
+    if (
+      t.isIdentifier(value) &&
+      binding.constantViolations
+      .find(p => pathOrder(p, value) > 0 && pathOrder(p, until) < 0)
+    ) {
+      return;
+    }
+
+    return value;
+  };
+
   const findAssignment = path => {
     if (!path.isIdentifier()) {
       return;
@@ -2037,7 +2299,7 @@ export default function(babel) {
         binding.constantViolations.find(p => path.find(q => q.node === p.node))
       )
     ) {
-      return assignedValue(binding.path);
+      return checkMemberSafety(assignedValue(binding.path), path);
     }
 
     if (
@@ -2083,14 +2345,23 @@ export default function(babel) {
           continue;
         }
 
-        if (_inBlockIndex >= inBlockIndex) {
-          return assignedValue(ref.find(t.isAssignmentExpression));
+        if (
+          _inBlockIndex >= inBlockIndex &&
+          ref.find(t.isAssignmentExpression)
+        ) {
+          return checkMemberSafety(
+            assignedValue(ref.find(t.isAssignmentExpression)),
+            path
+          );
         }
         return;
       }
 
       if (sameBlock(binding.path, path)) {
-        return assignedValue(binding.path);
+        return checkMemberSafety(
+          assignedValue(binding.path),
+          path
+        );
       }
     }
   };
@@ -2114,6 +2385,14 @@ export default function(babel) {
         path.replaceWith(t.cloneDeep(binding.path.node.init));
       }
     },
+  };
+
+  const staticTrue = (path, state) => {
+    
+  };
+
+  const staticFalse = (path, state) => {
+    
   };
 
   const staticEvaluations = {
@@ -2247,7 +2526,17 @@ export default function(babel) {
           t.isFunctionExpression(objectAssigned) ||
           path.node.test.computed &&
           t.isNumericLiteral(path.node.test.property) &&
-          t.isArrayExpression(objectAssigned)
+          t.isArrayExpression(objectAssigned) &&
+          (
+            path.node.test.property.value < 0 ||
+            objectAssigned.node.elements.length < path.node.test.property.value
+          ) ||
+          t.isNumericLiteral(objectAssigned) &&
+          t.isIdentifier(path.node.test.property) &&
+          Number_properties.indexOf(path.node.test.property.name) === -1 ||
+          t.isArrayExpression(objectAssigned) &&
+          t.isIdentifier(path.node.test.property) &&
+          Array_properties.indexOf(path.node.test.property.name) === -1
         ) {
           countChange(state);
           path.replaceWith(t.cloneDeep(path.node.alternate));
@@ -2389,22 +2678,6 @@ export default function(babel) {
           }
         }
       }
-    },
-
-    AssignmentExpression: {
-      exit(path, state) {
-        let assigned = findMemberAssignment(path.get('left'));
-        if (!assigned && path.get('left').isIdentifier()) {
-          assigned = findAssignment(path.get('left'));
-        }
-        if (
-          assigned && assigned.isLiteral() &&
-          assigned.parentPath.isAssignmentExpression()
-        ) {
-          countChange(state);
-          assigned.parentPath.remove();
-        }
-      },
     },
   };
 
@@ -2593,17 +2866,78 @@ export default function(babel) {
   };
 
   const deadCode = {
-    ExpressionStatement(path) {
+    ExpressionStatement(path, state) {
       if (path.get('expression').isIdentifier()) {
+        countChange(state);
         path.remove();
       }
-      if (path.get('expression').isMemberExpression()) {
+      else if (path.get('expression').isMemberExpression()) {
+        countChange(state);
         path.remove();
       }
+      else if (path.get('expression').isLiteral()) {
+        countChange(state);
+        path.remove();
+      }
+      else if (path.get('expression').isObjectExpression()) {
+        countChange(state);
+        path.remove();
+      }
+      else if (path.get('expression').isArrayExpression()) {
+        countChange(state);
+        path.remove();
+      }
+      else if (path.get('expression').isFunctionExpression()) {
+        countChange(state);
+        path.remove();
+      }
+      else if (
+        path.get('expression').isCallExpression() &&
+        (
+          path.get('expression.callee').isMemberExpression() ||
+          path.get('expression.callee').isIdentifier()
+        ) &&
+        !path.node.expression.arguments.find(arg => (
+          !t.isLiteral(arg) && !t.isFunctionExpression(arg)
+        ))
+      ) {
+        countChange(state);
+        path.remove();
+      }
+      else if (path.get('expression').isBinaryExpression()) {
+        countChange(state);
+        path.insertBefore(t.expressionStatement(
+          t.cloneDeep(path.get('expression.left').node)
+        ));
+        path.replaceWith(t.cloneDeep(path.get('expression.right').node));
+      }
+    },
+    AssignmentExpression: {
+      exit(path, state) {
+        let assigned = findMemberAssignment(path.get('left'));
+        if (!assigned && path.get('left').isIdentifier()) {
+          assigned = findAssignment(path.get('left'));
+        }
+        if (
+          assigned &&
+          assigned.parentPath.isAssignmentExpression()
+        ) {
+          const assignedLeft = assignedId(assigned);
+          if (checkMemberSafety(assignedLeft, path.get('left'), true)) {
+            countChange(state);
+            assigned.parentPath.replaceWith(t.cloneDeep(assigned.node));
+          }
+        }
+        if (matchesMember(path.get('left'), path.get('right'))) {
+          countChange(state);
+          path.remove();
+        }
+      },
     },
     BlockStatement: {
       exit(path) {
         if (t.isBlockStatement(path.parent) && path.node.body.length === 0) {
+          countChange(state);
           path.remove();
         }
       },
@@ -2627,6 +2961,7 @@ export default function(babel) {
         state[path.node.name].refsFrom.length === 0
       ) {
         if (!path.getStatementParent().parentPath.isProgram()) {
+          countChange(state);
           path.getStatementParent().remove();
         }
       }
@@ -3425,33 +3760,27 @@ export default function(babel) {
           // return;
           // break;
 
-          let refs = {};
-          path.traverse(refCount, refs);
-          let lastRefs = refs;
-          grossRemoved = 0;
-          removed = Infinity;
-          while (removed > 0) {
-            removed = 0;
-            refs = {};
+          changed = 1;
+          while (n-- && changed) {
+            changed = 0;
+
+            let refs = {};
             let start = Date.now();
-            path.traverse(deadCode, lastRefs);
-            timing.deadCode = (timing.deadCode || 0) + (Date.now() - start);
-            start = Date.now();
             path.traverse(refCount, refs);
             timing.refCount = (timing.refCount || 0) + (Date.now() - start);
-            if (Object.keys(refs).length < Object.keys(lastRefs).length) {
-              removed = 1;
-            }
-            lastRefs = refs;
+            start = Date.now();
+            path.traverse(deadCode, refs);
+            timing.deadCode = (timing.deadCode || 0) + (Date.now() - start);
 
-            grossRemoved += removed;
+            changed += refs.__changed || 0;
           }
-        } while (n2-- && (grossRemoved > 0 || INNER_ITERATIONS - n > 2));
+        } while (n2-- && (INNER_ITERATIONS - n > 4));
 
-        path.traverse({
+        // traverse.clearCache();
+        traverse(path.parent, {
           ['Program|Function'](path) {
             const names = {};
-            path.traverse(crawlNames, names);
+            traverse(path.parent, crawlNames, path.scope, names);
             const newNames = {};
             const reverseNames = {};
             for (const key in names) {
@@ -3466,9 +3795,9 @@ export default function(babel) {
               }`;
               reverseNames[reverse].push(key);
             }
-            path.traverse(setNames, newNames);
+            traverse(path.parent, setNames, path.scope, newNames);
           },
-        });
+        }, path.scope);
 
         // console.log(timing);
       },

@@ -1,7 +1,8 @@
-const updateNoop = (element, state) => state;
+const updateNoop = (state, element) => state;
 updateNoop.copy = dest => dest;
+updateNoop.merge = dest => dest;
 const animateNoop = () => {};
-animateNoop.eq = () => true;
+animateNoop.done = () => true;
 const presentNoop = () => {};
 presentNoop.store = () => {};
 presentNoop.restore = () => {};
@@ -72,11 +73,14 @@ const transitionStep = function(_this, input) {
       const {root} = data.animated;
       data.lastT = data.t;
       data.t = 0;
-      data.end = update(root.element, data.end, data);
-      console.log(JSON.stringify(data.end, null, '  '));
+      data.end = update(data.end, root.element, data);
       if (_this.transitionState === STARTING) {
         data.state = update.copy(data.state, data.end);
         data.begin = update.copy(data.begin, data.end);
+      }
+      else {
+        data.state = update.merge(data.state, data.end);
+        data.begin = update.merge(data.begin, data.end);
       }
       data.store = present.store(data.store, root.element, data);
       _this.loop.add(step, _this);
@@ -186,8 +190,8 @@ const step = function(_this, dt) {
   const {data} = _this;
   const {animate, present} = _this.animation;
   data.t += dt;
-  animate(data.t, data.state, data.begin, data.end);
-  if (animate.done && animate.done(data.t, data.state, data.begin, data.end)) {
+  animate(data.t, data.state, data.begin, data.end, data);
+  if (animate.done && animate.done(data.t, data.state, data.begin, data.end, data)) {
     transitionStep(_this, DONE);
   }
   else {
@@ -218,8 +222,7 @@ class AnimatedState {
     return this.state;
   }
 
-  set(state, order, resolve = noop) {
-    console.log('set', arguments);
+  set(state, resolve = noop) {
     this.state = state;
     transitionStep(this, PREPARE);
     // Set resolve after stepping the transitionState. Stepping may call the
@@ -229,7 +232,7 @@ class AnimatedState {
   }
 
   setThen(state) {
-    return new Promise(resolve => this.set(state, null, resolve));
+    return new Promise(resolve => this.set(state, resolve));
   }
 
   schedule(animated, loop) {

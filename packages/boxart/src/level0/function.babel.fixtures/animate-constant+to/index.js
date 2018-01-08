@@ -19,4 +19,4 @@ function constantTo() {
   return to(constant(0), constant(1));
 }
 
-module.exports = constantTo();
+module.exports = constantTo;

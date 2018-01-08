@@ -26,4 +26,4 @@ function abProperties() {
   });
 }
 
-module.exports = abProperties();
+module.exports = abProperties;

@@ -13,7 +13,13 @@ function unionProperties() {
     return dest;
   };
 
+  f.merge = function (dest, src) {
+    dest = dest || {};
+    dest.u = src.u;
+    return dest;
+  };
+
   return f;
 }
 
-module.exports = unionProperties();
+module.exports = unionProperties;

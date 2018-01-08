@@ -48,4 +48,4 @@ function objectTo() {
   });
 }
 
-module.exports = objectTo();
+module.exports = objectTo;

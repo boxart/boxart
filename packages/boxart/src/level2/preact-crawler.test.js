@@ -5,8 +5,8 @@ import 'babel-polyfill';
 import {h, Component} from 'preact';
 import render from 'preact-render-spy';
 
-import Bus from './bus';
-import Matcher from './matcher';
+import Bus from '../level1/bus';
+import Matcher from '../level1/matcher';
 import PreactCrawler from './preact-crawler';
 
 let bus, matcher, crawler;

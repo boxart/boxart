@@ -1,4 +1,4 @@
-const _constant = function (c) {
+const constant = function (c) {
   const f = function (state, element, data) {
     return c;
   };
@@ -7,7 +7,11 @@ const _constant = function (c) {
     return src;
   };
 
+  f.merge = function (dest, src) {
+    return src;
+  };
+
   return f;
 };
 
-module.exports = _constant;
+module.exports = constant;

@@ -114,7 +114,8 @@ class PatternSearch {
       this.rebuild();
     }
 
-    this.begin = begin;
+    this.begin = begin || 0;
+    this.end = begin || 0;
     const _str = str + '\0';
     const {code} = this;
     let ptr = 0;
@@ -142,7 +143,7 @@ class PatternSearch {
         if (code[ptr] === -1) {
           ptr = 0;
           while (++i < l && _str.charCodeAt(i) !== SPACE);
-          this.begin = i;
+          this.begin = i + 1;
         }
       }
     }

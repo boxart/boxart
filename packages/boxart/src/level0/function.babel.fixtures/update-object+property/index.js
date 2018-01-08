@@ -24,4 +24,4 @@ function objectProperty() {
   });
 }
 
-module.exports = objectProperty();
+module.exports = objectProperty;

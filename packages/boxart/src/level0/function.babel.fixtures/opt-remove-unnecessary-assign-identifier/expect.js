@@ -1,7 +1,7 @@
 function removeUnnecessaryAssignIdentifier(fn, o) {
   const f = function (a, b, c) {
     let s = '';
-    s = 'abc' + a(o);
+    a(o);
 
     s = 'ghi' + c();
     return s;

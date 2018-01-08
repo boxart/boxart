@@ -1,4 +1,4 @@
-const _identity = function () {
+const identity = function () {
   const f = function (state, element, data) {
     return element;
   };
@@ -7,7 +7,11 @@ const _identity = function () {
     return src;
   };
 
+  f.merge = function (dest, src) {
+    return src;
+  };
+
   return f;
 };
 
-module.exports = _identity;
+module.exports = identity;

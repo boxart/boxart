@@ -1,4 +1,4 @@
-const _value = function (fn) {
+const value = function (fn) {
   const f = function (element, state, data) {
     return fn(element, state, data);
   };
@@ -14,4 +14,4 @@ const _value = function (fn) {
   return f;
 };
 
-module.exports = _value;
+module.exports = value;

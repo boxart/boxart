@@ -1,6 +1,6 @@
 function constantTo() {
   const f = function (t, state, begin, end, data) {
-    return (1 - 0) * Math.min(1, t) + 0;
+    return 1 * Math.min(1, t) + 0;
   };
   f.done = function (t, state, begin, end, data) {
     return true && t >= 1;
@@ -14,4 +14,4 @@ function constantTo() {
   return f;
 }
 
-module.exports = constantTo();
+module.exports = constantTo;

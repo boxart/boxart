@@ -1,9 +1,10 @@
 import 'babel-polyfill';
 
-import animate from './animate';
+import animate from '../level0/animate';
 import AnimatedState from './animated-state';
-import update from './update';
-import present from './present';
+import update from '../level0/update';
+import present from '../level0/present';
+import RunLoop from './runloop';
 
 const render = () => {
   const animated = {
@@ -36,12 +37,14 @@ const animations = () => {
   return {
     default: {
       update: update.object({
-        left: update.value(element => element.getBoundingClientRect().left),
+        left: update.value((state, element) => (
+          element.getBoundingClientRect().left
+        )),
       }),
       animate: animate.object({
-        left: animate.fromTo([animate.begin(), animate.end()]),
+        left: animate.to(animate.begin(), animate.end()),
       }).duration(0.5),
-      present: present.styles({
+      present: present.style({
         transform: present.translatex([present.key('left').px()]),
       }),
     },
@@ -52,12 +55,13 @@ const wait = () => Promise.resolve().then(() => Promise.resolve());
 const timeout = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 let animated = null;
-let _animations = null;
+let _animations = animations();
 let state = null;
 
 beforeEach(() => {
+  // Let the animations have enough time to compile the first time.
+  jest.setTimeout(30000);
   animated = render();
-  _animations = animations();
   state = new AnimatedState(_animations);
 });
 
@@ -69,14 +73,16 @@ it('creates an AnimatedState', () => {
   expect(state).toBeTruthy();
 });
 
-it('stores state after scheduling', async () => {
-  state.schedule(animated);
+it('stores state once pending', async () => {
+  state.schedule(animated, RunLoop.main);
+  state.set('default');
   await wait();
   expect(state.data.state.left).toBe(0);
 });
 
 it('modifies presentation while animating', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
+  state.set('default');
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
@@ -87,7 +93,8 @@ it('modifies presentation while animating', async () => {
 });
 
 it('restores state after animating', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
+  state.set('default');
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
@@ -98,16 +105,17 @@ it('restores state after animating', async () => {
 });
 
 it('resolves its running promise after animating', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await wait();
   animated.root.element.style.left = '50px';
-  state.set('default');
-  await state.running;
+  const running = state.setThen('default');
+  await timeout(17);
+  await running;
   expect(animated.root.element.style.transform).toBe('');
 });
 
 it('restores state when unscheduled in the middle of animation', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
@@ -117,20 +125,20 @@ it('restores state when unscheduled in the middle of animation', async () => {
 });
 
 it('modifies presentation when animating is rescheduled', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
   await timeout(100);
   state.unschedule();
   await timeout(100);
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await timeout(100);
   expect(animated.root.element.style.transform).not.toBe('');
 });
 
 it('modifies presentation when animating is rescheduled [2]', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
@@ -138,17 +146,17 @@ it('modifies presentation when animating is rescheduled [2]', async () => {
   state.unschedule();
   expect(animated.root.element.style.transform).toBe('');
   await timeout(100);
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   state.unschedule();
   expect(animated.root.element.style.transform).toBe('');
   await timeout(100);
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await timeout(100);
   expect(animated.root.element.style.transform).not.toBe('');
 });
 
 it('modifies presentation when animating is rescheduled [3]', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
@@ -156,33 +164,34 @@ it('modifies presentation when animating is rescheduled [3]', async () => {
   state.unschedule();
   expect(animated.root.element.style.transform).toBe('');
   await timeout(100);
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   expect(animated.root.element.style.transform).toBe('');
   await wait();
   state.unschedule();
   expect(animated.root.element.style.transform).toBe('');
   await timeout(100);
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   expect(animated.root.element.style.transform).toBe('');
   await timeout(100);
   expect(animated.root.element.style.transform).not.toBe('');
 });
 
 it('restores original presentation after rescheduled animation', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
+  state.set('default');
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
   await timeout(100);
   state.unschedule();
   await timeout(100);
-  state.schedule(animated);
-  await timeout(500);
+  state.schedule(animated, RunLoop.main);
+  await timeout(517);
   expect(animated.root.element.style.transform).toBe('');
 });
 
 it('resolves its running promise after rescheduled animation', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
@@ -190,46 +199,47 @@ it('resolves its running promise after rescheduled animation', async () => {
   await timeout(100);
   state.unschedule();
   await timeout(100);
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await running;
   expect(animated.root.element.style.transform).toBe('');
 });
 
 it('restore during animation', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
   await timeout(100);
   expect(animated.root.element.style.transform).not.toBe('');
-  state.restore();
+  state.unschedule();
   expect(animated.root.element.style.transform).toBe('');
 });
 
 it('store after restore during animation', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
+  state.set('default');
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
   await timeout(100);
   expect(animated.root.element.style.transform).not.toBe('');
-  state.restore();
+  state.unschedule();
   expect(animated.root.element.style.transform).toBe('');
-  state.store();
+  state.schedule(animated, RunLoop.main);
   await timeout(100);
   expect(animated.root.element.style.transform).not.toBe('');
-  await timeout(400);
+  await timeout(517);
   expect(animated.root.element.style.transform).toBe('');
 });
 
 it('resolves its running promise after storing during animation', async () => {
-  state.schedule(animated);
+  state.schedule(animated, RunLoop.main);
   await wait();
   animated.root.element.style.left = '50px';
   state.set('default');
   await timeout(100);
   expect(animated.root.element.style.transform).not.toBe('');
-  state.restore();
+  state.unschedule();
   expect(animated.root.element.style.transform).toBe('');
   await state.running;
   expect(animated.root.element.style.transform).toBe('');

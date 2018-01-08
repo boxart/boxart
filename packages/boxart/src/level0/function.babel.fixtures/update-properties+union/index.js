@@ -39,4 +39,4 @@ function unionProperties() {
   });
 }
 
-module.exports = unionProperties();
+module.exports = unionProperties;

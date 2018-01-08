@@ -1,11 +1,11 @@
-const _object3 = function (o) {
-  const _Object_keys_o = Object.keys(o);
+const object = function (o) {
+  const Object_keys_o = Object.keys(o);
 
   const f = function (t, state, begin, end, data) {
     data.stateParent = state;
     data.beginParent = begin;
     data.endParent = end;
-    for (const k of _Object_keys_o) {
+    for (const k of Object_keys_o) {
       state[k] = f.o[k](t, state[k], begin[k], end[k], data);
     }
     return state;
@@ -13,18 +13,16 @@ const _object3 = function (o) {
   f.o = o;
 
   f.toB = function (b, t, state, begin, end, data) {
-    data.stateParent = state;data.beginParent = begin;data.endParent = end;for (const k of _Object_keys_o) {
+    data.stateParent = state;data.beginParent = begin;data.endParent = end;for (const k of Object_keys_o) {
       let result;
 
-      if (f.o[k].toB) {
-        result = f.o[k].toB(b.o[k], t, state[k], begin[k], end[k], data);
+      if (o[k].toB) {
+        result = o[k].toB(b.o[k], t, state[k], begin[k], end[k], data);
       } else {
-        const _t1 = t;
-
-        const _b1 = f.o[k](t, state[k], begin[k], end[k], data);
+        const _b1 = o[k](t, state[k], begin[k], end[k], data);
 
         const e = b.o[k](t, state[k], begin[k], end[k], data);
-        result = (e - _b1) * Math.min(1, _t1) + _b1;
+        result = (e - _b1) * Math.min(1, t) + _b1;
       }
 
       state[k] = result;
@@ -38,4 +36,4 @@ const _object3 = function (o) {
   return f;
 };
 
-module.exports = _object3;
+module.exports = object;

@@ -37,4 +37,4 @@ function constantToEasing() {
   );
 }
 
-module.exports = constantToEasing();
+module.exports = constantToEasing;

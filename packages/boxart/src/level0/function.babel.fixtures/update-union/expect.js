@@ -1,4 +1,4 @@
-const _union = function (ary) {
+const union = function (ary) {
   const f = function (state, element, data) {
     for (const v of ary) {
       state = v(state, element, data);
@@ -12,7 +12,13 @@ const _union = function (ary) {
     }return dest;
   };
 
+  f.merge = function (dest, src) {
+    for (const v of ary) {
+      dest = v.merge ? v.merge(dest, src) : src;
+    }return dest;
+  };
+
   return f;
 };
 
-module.exports = _union;
+module.exports = union;

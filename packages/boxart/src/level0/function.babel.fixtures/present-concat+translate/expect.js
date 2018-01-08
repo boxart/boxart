@@ -20,4 +20,4 @@ function concatTranslate() {
   return f;
 }
 
-module.exports = concatTranslate();
+module.exports = concatTranslate;

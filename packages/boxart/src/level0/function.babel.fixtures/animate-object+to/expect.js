@@ -1,6 +1,6 @@
 function objectTo() {
   const f = function (t, state, begin, end, data) {
-    return (1 - 0) * Math.min(1, t) + 0;
+    return 1 * Math.min(1, t) + 0;
   };
   f.done = function (t, state, begin, end, data) {
     return true && t >= 1;
@@ -12,7 +12,7 @@ function objectTo() {
   };
 
   const _f1 = function (t, state, begin, end, data) {
-    return (2 - 1) * Math.min(1, t) + 1;
+    return 1 * Math.min(1, t) + 1;
   };_f1.done = function (t, state, begin, end, data) {
     return true && t >= 1;
   };
@@ -22,8 +22,8 @@ function objectTo() {
   };
 
   const _f2 = function (t, state, begin, end, data) {
-    state.top = (1 - 0) * Math.min(1, t) + 0;
-    state.left = (2 - 1) * Math.min(1, t) + 1;
+    state.top = 1 * Math.min(1, t) + 0;
+    state.left = 1 * Math.min(1, t) + 1;
     return state;
   };
   _f2.o = {
@@ -51,4 +51,4 @@ function objectTo() {
   return _f2;
 }
 
-module.exports = objectTo();
+module.exports = objectTo;

@@ -11,7 +11,7 @@ it('matches type then animation and id', () => {
 
   expect(matcher.match('type')).toBe(true);
   expect(matcher.matchType()).toBe('type');
-  expect(matcher.matchAnimation()).toBeFalsy();
+  expect(matcher.matchAnimation()).toBe('default');
   expect(matcher.matchId()).toBe('type');
 
   expect(matcher.match('type enter')).toBe(true);
@@ -49,15 +49,15 @@ it('matches type then animation and id', () => {
   expect(matcher.matchAnimation()).toEqual('typespin');
   expect(matcher.matchId()).toBe('typeid');
 
-  expect(matcher.match('typeid')).toBe(false);
-  expect(matcher.matchType()).toBeFalsy();
-  expect(matcher.matchAnimation()).toBeFalsy();
-  expect(matcher.matchId()).toBeFalsy();
+  expect(matcher.match('typeid')).toBe(true);
+  expect(matcher.matchType()).toBe('type');
+  expect(matcher.matchAnimation()).toBe('default');
+  expect(matcher.matchId()).toBe('typeid');
 
-  expect(matcher.match('typespin')).toBe(false);
-  expect(matcher.matchType()).toBeFalsy();
-  expect(matcher.matchAnimation()).toBeFalsy();
-  expect(matcher.matchId()).toBeFalsy();
+  expect(matcher.match('typespin')).toBe(true);
+  expect(matcher.matchType()).toBe('type');
+  expect(matcher.matchAnimation()).toBe('typespin');
+  expect(matcher.matchId()).toBe('type');
 
   expect(matcher.match('typo')).toBe(false);
   expect(matcher.matchType()).toBeFalsy();

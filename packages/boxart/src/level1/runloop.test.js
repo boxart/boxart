@@ -78,26 +78,26 @@ it('calls once function', async () => {
 });
 
 it('calls item', async () => {
-  await new Promise(resolve => loop.add({step() {resolve();}}));
+  await new Promise(resolve => loop.add(function() {resolve();}));
 });
 
 it('calls item multiple times', async () => {
   await new Promise(resolve => {
     let i = 0;
-    loop.add({step() {
+    loop.add(function() {
       if (i++ > 2) {resolve();}
-    }});
+    });
   });
 });
 
 it('does not call removed items', async () => {
   let i = 0;
-  const item = {step() {
+  const item = function() {
     i++;
     if (i >= 2) {
       loop.remove(item);
     }
-  }};
+  };
   loop.add(item);
   await waitFrame();
   expect(i).toBe(1);

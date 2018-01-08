@@ -1,4 +1,4 @@
-const _constant3 = function (c) {
+const constant = function (c) {
   const f = function (t, state) {
     return c;
   };
@@ -15,4 +15,4 @@ const _constant3 = function (c) {
   return f;
 };
 
-module.exports = _constant3;
+module.exports = constant;

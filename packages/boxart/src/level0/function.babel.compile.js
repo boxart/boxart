@@ -12,6 +12,32 @@ function _arrowToFunction() {
   };
 }
 
+function _guessKeys(keys) {
+  return function({types: t}) {
+    return {
+      visitor: {
+        Function(path, state) {
+          if (keys.length > 0) {return;}
+          const names = path.node.params.map(param => (
+            t.isIdentifier(param) && param.name
+          ));
+          if (names.length >= 1 && names[0] === 'state') {
+            keys.push('copy', 'merge');
+          }
+          else if (
+            names.length >= 2 && names[0] === 't' && names[1] === 'state'
+          ) {
+            keys.push('toB', 'done');
+          }
+          else if (names.length >= 1 && names[0] === 'element') {
+            keys.push('store', 'restore');
+          }
+        },
+      },
+    };
+  };
+}
+
 function _fillInFunctions(registry) {
   const asts = {};
   return function({types: t}) {
@@ -175,9 +201,9 @@ export default function compile(fn, registry) {
       }
       // An error occured testing the compiled source. The original function can
       // be safely called.
-      f = function(...args) {
+      f = Object.assign(function(...args) {
         return fn(...args);
-      };
+      }, fn);
       // Stringify'ing the original function wouldn't be tremendously useful.
       // It'd only be a part of the function set for a given animation
       // component.
@@ -193,3 +219,12 @@ export default function compile(fn, registry) {
     return f;
   };
 };
+
+export function guessKeys(fn) {
+  const body = `function compiled() {return ${fn.toString()};}`;
+  const keys = [];
+  transform(body, {
+    plugins: [_guessKeys(keys)],
+  });
+  return keys;
+}

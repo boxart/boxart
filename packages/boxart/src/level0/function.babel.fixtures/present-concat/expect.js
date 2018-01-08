@@ -1,4 +1,4 @@
-const _concat = function (fns) {
+const concat = function (fns) {
   const f = function (element, state, data) {
     let s = '';
     for (const v of fns) {
@@ -18,4 +18,4 @@ const _concat = function (fns) {
   return f;
 };
 
-module.exports = _concat;
+module.exports = concat;

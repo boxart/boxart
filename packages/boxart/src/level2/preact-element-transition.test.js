@@ -4,8 +4,8 @@ import 'babel-polyfill';
 
 import {h} from 'preact';
 
-import Bus from './bus';
-import Matcher from './matcher';
+import Bus from '../level1/bus';
+import Matcher from '../level1/matcher';
 import PreactNodeIdGenerator from './preact-node-id-generator';
 import TransitionTree from './transition-tree';
 

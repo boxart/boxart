@@ -1,16 +1,20 @@
 const compile = require('./function.babel.compile').default;
+const guessKeys = require('./function.babel.compile').guessKeys;
 const funcRegistry = require('./function-registry');
 
 const lazyCompile = (fn, registry) => {
-  fn._compiled = fn._compiled || compile(fn, registry)();
+  fn._compiled = fn._compiled || compile(fn, registry)()();
   return fn._compiled;
 };
 
 const lazyCall = (fn, registry) => (...args) => {
+  // console.log(lazyCompile(fn, registry).toString())
   return lazyCompile(fn, registry)(...args);
 };
 
 const lazyKeyCall = (fn, key, registry) => (...args) => {
+  // console.log(Object.keys(lazyCompile(fn, registry)()));
+  // console.log((lazyCompile(fn, registry).toString()));
   return lazyCompile(fn, registry)[key](...args);
 };
 
@@ -25,21 +29,42 @@ const clearNesting = args => {
 function bindDefinition(fn, autobind, registry, origin, args) {
   if (!autobind) {return fn;}
   try {
-    const wrapped = Object.assign(lazyCall(fn), fn);
-    // Object.defineProperty(fn, 'meta', {
-    //   value: {origin, args, meta: fn.meta},
-    //   enumerable: false,
-    // });
-    Object.defineProperty(wrapped, 'meta', {
-      value: {origin, args},
+    const fake = (...args) => fn(...args);
+    const meta = {origin, args};
+    Object.defineProperty(fake, 'meta', {
+      value: meta,
       enumerable: false,
     });
-    Object.keys(fn).forEach(function(key) {
-      wrapped[key] = lazyKeyCall(fn, key);
+
+    const wrapped = Object.assign(lazyCall(fake, registry), fn);
+    Object.defineProperty(wrapped, 'meta', {
+      value: meta,
+      enumerable: false,
     });
+
+    let keys = Object.keys(fn);
+    if (keys.length === 0) {
+      keys = guessKeys(fn);
+    }
+    keys.forEach(function(key) {
+      wrapped[key] = lazyKeyCall(fake, key, registry);
+    });
+
     return wrapped;
   } catch(e) {
-    console.error(e);
+    try {
+      // Define meta to throw an error. Otherwise compiling this function will
+      // loop until a maximum call stack error.
+      Object.defineProperty(fn, 'meta', {
+        get() {
+          throw e;
+        },
+        enumerable: false,
+      });
+    }
+    catch (_e) {
+      throw e;
+    }
     return fn;
   }
 }

@@ -14,7 +14,14 @@ function abProperties() {
     return dest;
   };
 
+  f.merge = function (dest, src) {
+    dest = dest || {};
+    dest.a = src.a;
+    dest.b = src.b;
+    return dest;
+  };
+
   return f;
 }
 
-module.exports = abProperties();
+module.exports = abProperties;

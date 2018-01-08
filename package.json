@@ -9,6 +9,9 @@
     "email": "mzgoddard@gmail.com"
   },
   "license": "ISC",
+  "scripts": {
+    "test": "cd packages/boxart && npm test"
+  },
   "devDependencies": {
     "lerna": "^2.5.1"
   }
