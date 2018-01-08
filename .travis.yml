@@ -1,0 +1,10 @@
+language: node_js
+node_js:
+  - node
+  - lts/*
+
+install:
+  - yarn
+  - lerna bootstrap
+
+cache: yarn
