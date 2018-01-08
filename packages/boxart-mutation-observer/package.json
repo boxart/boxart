@@ -1,0 +1,16 @@
+{
+  "name": "boxart-mutation-observer",
+  "version": "0.2.0-alpha.0",
+  "description": "",
+  "main": "main",
+  "module": "module",
+  "keywords": [],
+  "author": {
+    "name": "Michael \"Z\" Goddard",
+    "email": "mzgoddard@gmail.com"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "boxart": "0.2.0-alpha.0"
+  }
+}
