@@ -37,6 +37,16 @@ module.exports = {
         },
       },
       {
+        test: /\.js$/,
+        include: join(__dirname, 'react'),
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['react'],
+          },
+        },
+      },
+      {
         test: /\banimations\.js$/,
         use: FunctionCompilePlugin.buildTime(),
       },
