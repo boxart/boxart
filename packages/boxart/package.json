@@ -37,6 +37,7 @@
     "preact": "^8.2.7",
     "preact-render-spy": "^1.2.1",
     "raw-loader": "^0.5.1",
+    "react": "^16.2.0",
     "source-map-support": "^0.5.0",
     "webpack": "^3.8.1",
     "webpack-dev-server": "^2.9.3",

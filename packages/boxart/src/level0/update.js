@@ -205,6 +205,16 @@ let rect = inlined(function rect() {
     rect.height = _rect.height;
     return rect;
   };
+  f.merge = function(dest, src) {
+    dest = dest || {};
+    dest.left = typeof dest.left !== 'undefined' ? dest.left : src.left;
+    dest.top = typeof dest.top !== 'undefined' ? dest.top : src.top;
+    dest.right = typeof dest.right !== 'undefined' ? dest.right : src.right;
+    dest.bottom = typeof dest.bottom !== 'undefined' ? dest.bottom : src.bottom;
+    dest.width = typeof dest.width !== 'undefined' ? dest.width : src.width;
+    dest.height = typeof dest.height !== 'undefined' ? dest.height : src.height;
+    return dest;
+  };
   return f;
 });
 
