@@ -72,6 +72,10 @@ export default function(babel) {
     state.__changed = (state.__changed || 0) + 1;
   };
 
+  const needNewCache = state => {
+    state.__needNewCache = true;
+  };
+
   const getPathsMap = state => {
     if (!pathsMap.get(state)) {
       pathsMap.set(state, {});
@@ -953,7 +957,7 @@ export default function(babel) {
           t.isLiteral(maybeMember) && maybeMember.value
         ) {
           countChange(state);
-          path.replaceWith(path.node.consequent);
+          path.replaceWith(t.cloneDeep(path.node.consequent));
         }
         if (
           t.isConditionalExpression(path) &&
@@ -971,7 +975,7 @@ export default function(babel) {
           )
         ) {
           countChange(state);
-          path.replaceWith(path.node.alternate);
+          path.replaceWith(t.cloneDeep(path.node.alternate));
         }
       },
     },
@@ -1088,6 +1092,8 @@ export default function(babel) {
             });
           });
 
+          path.parentPath.traverse();
+
           path.remove();
         }
         else if (
@@ -1115,6 +1121,8 @@ export default function(babel) {
               path.insertBefore(t.cloneDeep(statement));
             });
           });
+
+          path.parentPath.traverse();
 
           path.remove();
         }
@@ -1192,6 +1200,8 @@ export default function(babel) {
               callStatement.insertBefore(t.cloneDeep(statement));
             }
           });
+
+          path.getStatementParent().parentPath.traverse();
 
           if (!hasReturn) {
             path.remove();
@@ -1335,7 +1345,7 @@ export default function(babel) {
           t.isLiteral(maybeMember) && maybeMember.value
         ) {
           countChange(state);
-          path.replaceWith(path.node.consequent);
+          path.replaceWith(t.cloneDeep(path.node.consequent));
         }
         if (
           t.isConditionalExpression(path.node) &&
@@ -1344,7 +1354,7 @@ export default function(babel) {
           t.isFunctionExpression(load(path.get('test.object'), state))
         ) {
           countChange(state);
-          path.replaceWith(path.node.alternate);
+          path.replaceWith(t.cloneDeep(path.node.alternate));
         }
       },
     },
@@ -1905,7 +1915,29 @@ export default function(babel) {
     a.getStatementParent().parent === b.getStatementParent().parent
   );
 
+  const getCachedPathOrder = (a, b) => {
+    if (a._pathOrder && a._pathOrder.has(b)) {
+      return a._pathOrder.get(b);
+    }
+  };
+
+  const setCachedPathOrder = (a, b, cmp) => {
+    if (!a._pathOrder) {
+      a._pathOrder = new Map();
+    }
+    if (!b._pathOrder) {
+      b._pathOrder = new Map();
+    }
+
+    a._pathOrder.set(b, cmp);
+    b._pathOrder.set(a, -cmp);
+
+    return cmp;
+  };
+
   const pathOrder = (a, b) => {
+    if (getCachedPathOrder(a, b)) {return getCachedPathOrder(a, b);}
+
     const nearA = a.find(p => (
       Array.isArray(p.container) && b.find(q => q.node === p.parent)
     ));
@@ -1926,10 +1958,10 @@ export default function(babel) {
       }
       const aKey = t.VISITOR_KEYS[nearA.type].indexOf(nearA.key);
       const bKey = t.VISITOR_KEYS[nearB.type].indexOf(nearB.key);
-      return aKey - bKey;
+      return setCachedPathOrder(a, b, aKey - bKey);
     }
     else {
-      return nearA.key - nearB.key;
+      return setCachedPathOrder(a, b, nearA.key - nearB.key);
     }
   };
 
@@ -1944,6 +1976,17 @@ export default function(babel) {
 
   const findMemberAssignment = member => {
     if (!member) {return;}
+
+    // if (member.scope._resultCache) {
+    //   for (const match of member.scope._resultCache) {
+    //     if (matchesMember(member, match[0])) {
+    //       if (checkMemberSafety(match[1], member)) {
+    //         return match[1];
+    //       }
+    //       break;
+    //     }
+    //   }
+    // }
 
     let item = member;
     while (
@@ -2169,7 +2212,14 @@ export default function(babel) {
         }
       }
     }
-    return checkMemberSafety(assigned, member);
+    const result = checkMemberSafety(assigned, member);
+    if (result) {
+      if (!member.scope._resultCache) {
+        member.scope._resultCache = [];
+      }
+      member.scope._resultCache.unshift([member, result]);
+    }
+    return result;
   };
 
   const assignedValue = path => {
@@ -3728,34 +3778,46 @@ export default function(babel) {
             let state = {};
 
             let start = Date.now();
-            path.traverse(Object.assign(
-              {},
+            path.traverse(traverse.visitors.merge([
+              letKindForAssignments,
+              staticEvaluations,
+              lastAssignedLiteral,
+              objectStaticCalls,
               staticCalls,
-              staticForOr
-            ), state);
+              staticForOr,
+              hoistBlockContent,
+            ]), state);
             timing.inline = (timing.inline || 0) + (Date.now() - start);
             changed += state.__changed || 0;
 
             state = {};
             start = Date.now();
-            path.traverse(hoistBlockContent, state);
-            timing.hoist = (timing.hoist || 0) + (Date.now() - start);
+            // path.traverse(hoistBlockContent, state);
+            // timing.hoist = (timing.hoist || 0) + (Date.now() - start);
             traverse.clearCache();
             start = Date.now();
-            path.traverse(letKindForAssignments, state);
-            timing.letKind = (timing.letKind || 0) + (Date.now() - start);
+            // path.traverse(letKindForAssignments, state);
+            // timing.letKind = (timing.letKind || 0) + (Date.now() - start);
             start = Date.now();
-            path.traverse(traverse.visitors.merge([
-              staticEvaluations,
-              lastAssignedLiteral,
-            ]), state);
+            // path.traverse(traverse.visitors.merge([
+            //   // letKindForAssignments,
+            //   // staticEvaluations,
+            //   // lastAssignedLiteral,
+            //   // objectStaticCalls,
+            // ]), state);
             timing.evalAndAssignedLiterals = (timing.evalAndAssignedLiterals || 0) + (Date.now() - start);
 
             start = Date.now();
-            path.traverse(objectStaticCalls, state);
-            timing.objectStatic = (timing.objectStatic || 0) + (Date.now() - start);
+            // path.traverse(objectStaticCalls, state);
+            // timing.objectStatic = (timing.objectStatic || 0) + (Date.now() - start);
             changed += state.__changed || 0;
           }
+          path.traverse(traverse.visitors.merge([
+            // letKindForAssignments,
+            staticEvaluations,
+            lastAssignedLiteral,
+            // objectStaticCalls,
+          ]), {});
           timing.iterations = (timing.iterations || 0) + (INNER_ITERATIONS - n);
           // return;
           // break;
@@ -3808,7 +3870,7 @@ export default function(babel) {
           },
         }, path.scope);
 
-        // console.log(timing);
+        console.log(timing);
       },
     }
   };
