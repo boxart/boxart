@@ -47,14 +47,24 @@ module.exports = {
         },
       },
       {
-        test: /\banimations\.js$/,
-        use: FunctionCompilePlugin.buildTime(),
+        test: /\.js$/,
+        include: join(__dirname, 'preact'),
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['preact'],
+          },
+        },
       },
+      // {
+      //   test: /\banimations\.js$/,
+      //   use: FunctionCompilePlugin.buildTime(),
+      // },
     ],
   },
   plugins: [
     ...htmlPlugins(),
     ...svgPlugins(),
-    new FunctionCompilePlugin(),
+    // new FunctionCompilePlugin(),
   ],
 };
