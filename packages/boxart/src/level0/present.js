@@ -166,15 +166,15 @@ let end = inlined(function end(fn) {
   });
 });
 
-let to = inlined(function to(a, b) {
+let to = inlined(function to(to1, to2) {
   return value(function(element, state, data) {
-    return sub(a, b(a))(element, state, data);
+    return sub(to1, to2(to1))(element, state, data);
   });
 });
 
-let over = inlined(function over(a, b) {
+let over = inlined(function over(over1, over2) {
   return value(function(element, state, data) {
-    return div(a, b(a))(element, state, data);
+    return div(over1, over2(over1))(element, state, data);
   });
 });
 
