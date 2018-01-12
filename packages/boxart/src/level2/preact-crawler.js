@@ -60,7 +60,7 @@ class PreactCrawler extends MatchOwner {
 
     const isComponent = typeof node.nodeName === 'function';
     if (isComponent) {
-      if (node.nodeName.prototype instanceof Component) {
+      if (node.nodeName.prototype.render) {
         // console.log(node.nodeName.name, 'Component');
         if (node.attributes && node.attributes.ref) {
           const _ref = node.attributes && node.attributes.ref;
@@ -99,12 +99,28 @@ class PreactCrawler extends MatchOwner {
           const _ref = node.attributes && node.attributes.ref;
           return this.cloneElement(node, children, element => {
             _ref(element);
-            refState = this.elementRef(refState, type, id, element);
+            if (element) {
+              refState = this.elementRef(refState, type, id, element);
+            }
+            else {
+              Promise.resolve()
+              .then(() => {
+                refState = this.elementRef(refState, type, id, element);
+              });
+            }
           });
         }
         else {
           return this.cloneElement(node, children, element => {
-            refState = this.elementRef(refState, type, id, element);
+            if (element) {
+              refState = this.elementRef(refState, type, id, element);
+            }
+            else {
+              Promise.resolve()
+              .then(() => {
+                refState = this.elementRef(refState, type, id, element);
+              });
+            }
           });
         }
       }
@@ -167,7 +183,9 @@ class PreactCrawler extends MatchOwner {
 
     clone.children = node.children;
     clone.attributes = {
-      props: node.attributes,
+      props: node.children ?
+        Object.assign({}, node.attributes, {children: node.children}) :
+        node.attributes,
       nodeName: node.nodeName,
       path,
     };

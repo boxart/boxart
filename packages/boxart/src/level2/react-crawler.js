@@ -96,12 +96,28 @@ class ReactCrawler extends MatchOwner {
           const _ref = node.ref;
           return this.cloneElement(node, children, element => {
             _ref(element);
-            refState = this.elementRef(refState, type, id, element);
+            if (!element) {
+              refState = this.elementRef(refState, type, id, element);
+            }
+            else {
+              Promise.resolve()
+              .then(() => {
+                refState = this.elementRef(refState, type, id, element);
+              });
+            }
           });
         }
         else {
           return this.cloneElement(node, children, element => {
-            refState = this.elementRef(refState, type, id, element);
+            if (!element) {
+              refState = this.elementRef(refState, type, id, element);
+            }
+            else {
+              Promise.resolve()
+              .then(() => {
+                refState = this.elementRef(refState, type, id, element);
+              });
+            }
           });
         }
       }
