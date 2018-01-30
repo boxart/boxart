@@ -73,6 +73,7 @@ it('shallow stateless', async () => {
   ctx.render(<Crawler crawler={crawler}></Crawler>);
   expect(change).toBe(2);
   expect(create).toBe(1);
+  await Promise.resolve();
   expect(destroy).toBe(1);
 });
 
@@ -118,6 +119,7 @@ it('deep stateless', async () => {
   ctx.render(<Crawler key="crawl" crawler={crawler}><Page key="page" /></Crawler>);
   expect(change).toBe(2);
   expect(create).toBe(1);
+  await Promise.resolve();
   expect(destroy).toBe(1);
   ctx.render(<Crawler key="crawl" crawler={crawler}><Page key="page" loading="true" /></Crawler>);
   expect(change).toBe(3);
@@ -126,6 +128,7 @@ it('deep stateless', async () => {
   ctx.render(<Crawler key="crawl" crawler={crawler}><Page key="page" /></Crawler>);
   expect(change).toBe(3);
   expect(create).toBe(2);
+  await Promise.resolve();
   expect(destroy).toBe(2);
 });
 
@@ -168,6 +171,7 @@ it('shallow stateful', async () => {
   ctx.render(<Crawler crawler={crawler}></Crawler>);
   expect(change).toBe(2);
   expect(create).toBe(1);
+  await Promise.resolve();
   expect(destroy).toBe(1);
 });
 
@@ -216,6 +220,7 @@ it('deep stateful', async () => {
   ctx.render(<Crawler key="crawl" crawler={crawler}><Page key="page" /></Crawler>);
   expect(change).toBe(2);
   expect(create).toBe(1);
+  await Promise.resolve();
   expect(destroy).toBe(1);
   ctx.render(<Crawler key="crawl" crawler={crawler}><Page key="page" loading={true} /></Crawler>);
   expect(change).toBe(3);
@@ -224,5 +229,6 @@ it('deep stateful', async () => {
   ctx.render(<Crawler key="crawl" crawler={crawler}><Page key="page" /></Crawler>);
   expect(change).toBe(3);
   expect(create).toBe(2);
+  await Promise.resolve();
   expect(destroy).toBe(2);
 });
