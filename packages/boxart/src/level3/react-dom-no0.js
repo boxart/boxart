@@ -10,10 +10,14 @@ import RunLoop from '../level1/runloop';
 
 // level 2
 import ReactCrawler from '../level2/react-crawler';
+import ReactElementTransition from '../level2/react-element-transition';
+import ReactNodeIdGenerator from '../level2/react-node-id-generator';
+import ReactTransition from '../level2/react-transition';
+import TrasitionTree from '../level2/transition-tree';
 
 /**
  * @example
- *   import Boxart from 'boxart-preact';
+ *   import Boxart from 'boxart-react';
  *
  *   import animations from './animations';
  *
@@ -42,6 +46,10 @@ class React extends Component {
     new BusAnimatedManager(manager, bus);
 
     this.crawler = new ReactCrawler(bus, matcher);
+
+    const tree = new TrasitionTree(new ReactNodeIdGenerator(matcher));
+    new ReactTransition(this.crawler, bus, tree, matcher);
+    new ReactElementTransition(bus, tree, matcher);
   }
 
   render() {
