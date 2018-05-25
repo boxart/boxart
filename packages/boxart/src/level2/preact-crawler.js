@@ -60,7 +60,7 @@ class PreactCrawler extends MatchOwner {
 
     const isComponent = typeof node.nodeName === 'function';
     if (isComponent) {
-      if (node.nodeName.prototype.render) {
+      if (node.nodeName.prototype && node.nodeName.prototype.render) {
         // console.log(node.nodeName.name, 'Component');
         if (node.attributes && node.attributes.ref) {
           const _ref = node.attributes && node.attributes.ref;

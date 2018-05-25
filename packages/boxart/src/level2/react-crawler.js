@@ -67,7 +67,7 @@ class ReactCrawler extends MatchOwner {
 
     const isComponent = typeof node.type === 'function';
     if (isComponent) {
-      if (node.type.prototype.render) {
+      if (node.type.prototype && node.type.prototype.render) {
         return this.cloneStateful(node, (component, render) => {
           this.statefulHook(component, render, path);
         });
