@@ -1,0 +1,19 @@
+- [x] cut, copy & paste
+- [x] reset
+- [x] localStorage
+- [x] undo & redo
+- [x] highlight select in hierarchy
+- [x] ids
+- [x] render tree with replacements
+- [ ] timeline
+  - [ ] timeline state
+  - [ ] timeline render
+  - [ ] select property, box, animation
+  - [ ] configure end (and begin)
+  - [ ] configure begin
+  - [ ] disable add / delete if begin !== end
+  - [ ] boxes create state after updates, make keyframes for differences
+- [ ] scale in box area
+- [ ] ignore down, move selected
+- [ ] snapping borders
+- [ ] snapping ratio

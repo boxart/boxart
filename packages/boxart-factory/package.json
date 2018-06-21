@@ -1,0 +1,17 @@
+{
+  "name": "boxart-factory",
+  "version": "0.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": {
+    "name": "Michael \"Z\" Goddard",
+    "email": "mzgoddard@gmail.com"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "boxart-functions": "^0.2.0-alpha.10"
+  }
+}
