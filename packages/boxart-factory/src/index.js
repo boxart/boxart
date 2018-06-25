@@ -1,4 +1,11 @@
-export default boxTypes from './box-types.animation-factory';
+import boxTypes from './box-types.animation-factory';
+import Rect from './rect';
+
+export default boxTypes;
+
+export {
+  Rect
+};
 
 export {
   Animation,
@@ -7,7 +14,5 @@ export {
   Keyframe as AnimationKeyframe,
   EASING as ANIMATION_EASING
 } from './animation';
-
-export Rect from './rect';
 
 export {animation as factory} from './box-types.animation-factory';

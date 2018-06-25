@@ -1,8 +1,13 @@
 import {h, Component} from 'preact';
 
-import {Animation, Box, Property, Keyframe, FORMAT} from 'boxart-factory';
+import {Animation, AnimationBox as Box, AnimationProperty as Property, AnimationKeyframe as Keyframe} from 'boxart-factory';
 import {factory as BoxTypes_animation} from 'boxart-factory';
 import BoxTypes from 'boxart-factory-preact';
+
+const FORMAT = {
+  TRANSITION: '',
+  ANIMATION: '',
+};
 
 class KeyframeEdit extends Component {
   constructor(...args) {

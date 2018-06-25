@@ -11,6 +11,8 @@
   },
   "license": "ISC",
   "dependencies": {
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-preact": "^1.1.0",
     "boxart": "^0.2.0-alpha.10"
   }
 }

@@ -38,7 +38,7 @@ class Box {
         present.translate([present.key('x').percent(), present.key('y').percent()]),
         present.scale([present.key('width').div(present.constant(100)), present.key('height').div(present.constant(100))]),
       ]),
-      visibility: present.constant('initial'),
+      visibility: 'initial',
     });
   }
 }

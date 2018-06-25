@@ -1,4 +1,7 @@
 {
+  "name": "boxart-factory-editor",
+  "description": "",
+  "version": "0.0.0",
   "dependencies": {
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.4",
@@ -6,7 +9,7 @@
     "babel-preset-preact": "^1.1.0",
     "boxart": "^0.2.0-alpha.10",
     "boxart-factory": "^0.0.0",
-    "boxart-factory-preact": "^0.2.0-alpha.10",
+    "boxart-factory-preact": "0.0.0",
     "boxart-functions": "^0.2.0-alpha.10",
     "boxart-preact": "^0.2.0-alpha.10",
     "hard-source-webpack-plugin": "^0.8.1",

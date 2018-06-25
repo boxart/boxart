@@ -27,6 +27,7 @@ class BoxText extends Box {
           fontSize: values.fontSize,
         })}>
           {values.text}
+          {children}
       </div>
     );
   }

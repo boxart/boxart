@@ -8,6 +8,7 @@ module.exports = {
       {
         test: /\.jsx?$/,
         loader: 'babel-loader',
+        include: [/[\\/]boxart-factory-editor[\\/]/, /[\\/]boxart-factory-preact[\\/]/],
         options: {
           babelrc: false,
           presets: [

@@ -1,0 +1,35 @@
+{
+  "name": "root",
+  "type": "",
+  "x": 0.5,
+  "y": 0.5,
+  "width": 1,
+  "height": 1,
+  "values": null,
+  "children": [
+    {
+      "name": "title",
+      "type": "BoxText",
+      "x": 0.5,
+      "y": 0.15,
+      "width": 0.8,
+      "height": 0.1,
+      "values": null,
+      "children": [
+
+      ]
+    },
+    {
+      "name": "body",
+      "type": "BoxText",
+      "x": 0.5,
+      "y": 0.6,
+      "width": 0.8,
+      "height": 0.6,
+      "values": null,
+      "children": [
+
+      ]
+    }
+  ]
+}

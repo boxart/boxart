@@ -2,7 +2,7 @@ import {h, Component} from 'preact';
 
 import {Rect} from 'boxart-factory';
 
-const BoxTypes = require('./box-types').default;
+const BoxTypes = require('boxart-factory-preact').default;
 
 const RECT_STATE = {
   INIT: 'INIT',
