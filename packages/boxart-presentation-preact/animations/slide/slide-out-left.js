@@ -13,12 +13,12 @@ module.exports = factory({
         "easing": "linear",
         "format": "animation"
       }, {
-        "time": 29,
+        "time": 14,
         "value": -100,
         "easing": "linear",
         "format": "animation"
       }]
     }]
   }],
-  "duration": 30
+  "duration": 15
 });
