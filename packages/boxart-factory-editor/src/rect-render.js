@@ -356,7 +356,8 @@ class RectRender extends Component {
         dom={{
           style: {
             cursor: this.state.isDrag() ? 'grabbing' : this.state.isAdd() ? 'crosshair' : '',
-            background: `#${this.color}`,
+            // background: `#${this.color}`,
+            border: '2px solid black',
           },
           onMouseDown: onMouseDown,
           onMouseUp: onMouseUp,
