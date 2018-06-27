@@ -1,25 +1,90 @@
 {
-  "name": "",
-  "type": null,
+  "name": "root2",
+  "type": "Box3d",
   "x": 0.5,
   "y": 0.5,
   "width": 1,
   "height": 1,
-  "values": null,
+  "values": {
+    "translateY": 100,
+    "translateZ": 0,
+    "translateX": 0,
+    "rotateX": 0,
+    "rotateY": 0,
+    "rotateZ": 0,
+    "scaleX": 1,
+    "perspective": 0,
+    "scaleY": 1
+  },
   "children": [
     {
-      "name": "title",
-      "type": "BoxText",
+      "name": "",
+      "type": "Box3d",
       "x": 0.5,
-      "y": 0.7,
-      "width": 0.8,
-      "height": 0.3,
+      "y": 0.5,
+      "width": 1,
+      "height": 1,
       "values": {
-        "fontFamily": "",
-        "fontSize": "3rem"
+        "translateY": -100,
+        "translateZ": 0,
+        "translateX": 0,
+        "rotateX": 0,
+        "rotateY": 0,
+        "rotateZ": 0,
+        "scaleX": 1,
+        "perspective": 0,
+        "scaleY": 1
       },
       "children": [
+        {
+          "name": "",
+          "type": null,
+          "x": 0.5,
+          "y": 0.5,
+          "width": 1,
+          "height": 1,
+          "values": null,
+          "children": [
+            {
+              "name": "title3d",
+              "type": "Box3d",
+              "x": 0.5,
+              "y": 0.7,
+              "width": 0.8,
+              "height": 0.3,
+              "values": {
+                "fontFamily": "",
+                "fontSize": "3rem",
+                "rotateY": 0,
+                "rotateZ": 0,
+                "rotateX": 0,
+                "scaleX": 1,
+                "scaleY": 1,
+                "perspective": 0,
+                "translateX": 0,
+                "translateY": 0,
+                "translateZ": 0
+              },
+              "children": [
+                {
+                  "name": "title",
+                  "type": "BoxText",
+                  "x": 0.5,
+                  "y": 0.5,
+                  "width": 1,
+                  "height": 1,
+                  "values": {
+                    "fontFamily": "",
+                    "fontSize": "3rem"
+                  },
+                  "children": [
 
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       ]
     }
   ]
