@@ -1,12 +1,21 @@
 import {update, animate, present} from 'boxart-functions';
 
-class Box {
+class Box3d {
   static update() {
     return update.object({
       x: update.constant(0),
       y: update.constant(0),
       width: update.constant(100),
       height: update.constant(100),
+      perspective: update.constant(0),
+      translateX: update.constant(0),
+      translateY: update.constant(0),
+      translateZ: update.constant(0),
+      rotateX: update.constant(0),
+      rotateY: update.constant(0),
+      rotateZ: update.constant(0),
+      scaleX: update.constant(1),
+      scaleY: update.constant(1),
     });
   }
 
@@ -37,10 +46,20 @@ class Box {
       transform: present.concat([
         present.translate([present.key('x').percent(), present.key('y').percent()]),
         present.scale([present.key('width').div(present.constant(100)), present.key('height').div(present.constant(100))]),
+        present.func('perspective', ', ', [present.key('perspective').px()]),
+        present.translate3d([
+          present.key('translateX').percent(),
+          present.key('translateY').percent(),
+          present.key('translateZ').px()
+        ]),
+        present.rotatex([present.key('rotateX').deg()]),
+        present.rotatey([present.key('rotateY').deg()]),
+        present.rotatez([present.key('rotateZ').deg()]),
+        present.scale([present.key('scaleX'), present.key('scaleY')]),
       ]),
-      visibility: 'initial',
+      visibility: present.constant('initial'),
     });
   }
 }
 
-export default Box;
+export default Box3d;

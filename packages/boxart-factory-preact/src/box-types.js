@@ -7,6 +7,7 @@ import BoxImage from './box-image';
 import BoxInsert from './box-insert';
 import BoxReplace from './box-replace';
 import BoxText from './box-text';
+import Box3d from './box-3d';
 
 const types = {
   Box,
@@ -17,6 +18,7 @@ const types = {
   BoxInsert,
   BoxReplace,
   BoxText,
+  Box3d,
 };
 
 export const animation = _animation => {
