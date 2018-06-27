@@ -1,8 +1,13 @@
 import {h, Component} from 'preact';
 
-import {Animation, Box, Property, Keyframe, FORMAT} from 'boxart-factory';
-import {factory as BoxTypes_animation} from 'boxart-factory';
+import {Animation, AnimationBox as Box, AnimationProperty as Property, AnimationKeyframe as Keyframe} from 'boxart-factory';
+import BoxAnimationTypes, {factory as BoxTypes_animation} from 'boxart-factory';
 import BoxTypes from 'boxart-factory-preact';
+
+const FORMAT = {
+  TRANSITION: 'TRANSITION',
+  ANIMATION: 'ANIMATION',
+};
 
 class KeyframeEdit extends Component {
   constructor(...args) {
@@ -378,6 +383,10 @@ class BoxBody extends Component {
           minWidth: '100%',
           background: '#eee',
         }}>&nbsp;</div>
+        <div style={{
+          minWidth: '100%',
+          background: '#eee',
+        }}>&nbsp;</div>
       </div>
     );
   }
@@ -387,10 +396,15 @@ class BoxHeader extends Component {
   constructor(...args) {
     super(...args);
 
+    this.setType = this.setType.bind(this);
     this.addProperty = this.addProperty.bind(this);
     this.selectProperty = this.selectProperty.bind(this);
     this.removeProperty = this.removeProperty.bind(this);
     this.selectBox = this.selectBox.bind(this);
+  }
+
+  setType(event) {
+    this.props.setType(this.props.rect.name, event.target.value);
   }
 
   addProperty(event) {
@@ -431,6 +445,14 @@ class BoxHeader extends Component {
           <select style={{height: '0'}} onChange={this.addProperty}>
             <option>-----</option>
             {valued.map(value => <option value={value.key}>{value.key}</option>)}
+          </select>
+          &nbsp;
+        </div>
+        <div style={{overflow: 'hidden'}}>
+          <span>&nbsp;</span>
+          <select style={{height: '0'}} onChange={this.setType}>
+            <option>-----</option>
+            {Object.keys(BoxAnimationTypes).map(key => <option selected={key === animated.type} value={key}>{key}</option>)}
           </select>
           &nbsp;
         </div>
@@ -630,6 +652,7 @@ class Timeline extends Component {
     this.selectAnimation = this.selectAnimation.bind(this);
     this.previewAnimation = this.previewAnimation.bind(this);
     this.selectBox = this.selectBox.bind(this);
+    this.setType = this.setType.bind(this);
     this.addProperty = this.addProperty.bind(this);
     this.selectProperty = this.selectProperty.bind(this);
     this.removeProperty = this.removeProperty.bind(this);
@@ -869,6 +892,12 @@ class Timeline extends Component {
     });
   }
 
+  setType(boxName, typeName) {
+    this.props.setEditorMeta('timeline', {
+      animation: this._getAnimation().setType(boxName, typeName)
+    });
+  }
+
   addProperty(boxName, propertyName) {
     this.props.setEditorMeta('timeline', {
       animation: this._getAnimation().addProperty(boxName, propertyName)
@@ -1075,6 +1104,7 @@ class Timeline extends Component {
               selected={meta.state && meta.state.indexOf('_SELECT_') >= 0 ? meta.select : null}
               animated={animation.boxes.find(box => box.name === named.name)}
               selectBox={this.selectBox}
+              setType={this.setType}
               addProperty={this.addProperty}
               selectProperty={this.selectProperty}
               removeProperty={this.removeProperty} />

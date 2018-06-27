@@ -72,8 +72,9 @@ class Property {
 }
 
 class Box {
-  constructor({name = '', properties = []} = {}) {
+  constructor({name = '', type='', properties = []} = {}) {
     this.name = name;
+    this.type = type;
     this.properties = properties;
   }
 
@@ -89,6 +90,10 @@ class Box {
 
   _findProperty(propertyName) {
     return (this.properties.find(prop => prop.name === propertyName) || new Property({name: propertyName}));
+  }
+
+  setType(typeName) {
+    return new Box(Object.assign({}, this, {type: typeName}));
   }
 
   addProperty(propertyName) {
@@ -112,8 +117,8 @@ class Box {
     return this._changeProperties(propertyName, this._findProperty(propertyName).removeFrame(time));
   }
 
-  static fromJson({name, properties}) {
-    return new Box({name, properties: properties.map(Property.fromJson)});
+  static fromJson({name, type, properties}) {
+    return new Box({name, type, properties: properties.map(Property.fromJson)});
   }
 }
 
@@ -143,6 +148,10 @@ class Animation {
       this.boxes.find(box => box.name === boxName) ||
       new Box({name: boxName})
     );
+  }
+
+  setType(boxName, typeName) {
+    return this._changeBoxes(boxName, this._findBox(boxName).setType(typeName));
   }
 
   addProperty(boxName, propertyName) {
