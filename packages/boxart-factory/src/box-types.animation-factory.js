@@ -1,9 +1,11 @@
 import {update, animate, present} from 'boxart-functions';
 
 import Box from './box.animation-factory';
+import Box3d from './box-3d.animation-factory';
 
 const factories = {
   Box,
+  Box3d,
 };
 
 export const animation = _animation => {
