@@ -1,5 +1,7 @@
 import {h, Component} from 'preact';
 
+import Slide from './slide';
+
 class Presentation extends Component {
   constructor(...args) {
     super(...args);
@@ -53,7 +55,9 @@ class Presentation extends Component {
     console.log(children);
     return (
       <div>
-        {children[slide]}
+        <Slide key={slide - 1} class="previous">{children[slide - 1] || <span />}</Slide>
+        <Slide key={slide} class="active">{children[slide] || <span />}</Slide>
+        <Slide key={slide + 1} class="next">{children[slide + 1] || <span />}</Slide>
       </div>
     );
   }

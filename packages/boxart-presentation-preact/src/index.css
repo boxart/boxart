@@ -1,3 +1,15 @@
-.leave {
+.slide {
+  height: 100%;
+}
+
+.previous, .leave, .next {
   visibility: hidden;
+}
+
+.previous {
+  height: auto;
+}
+
+.slide-title.previous {
+  height: 100%;
 }
