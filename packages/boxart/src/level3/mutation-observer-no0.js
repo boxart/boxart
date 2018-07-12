@@ -39,7 +39,7 @@ class BoxartMutationObserver {
 
     new BusAnimatedManager(manager, bus);
 
-    this.innerObserver = new InnerMutationObserver({bus, matcher});
+    this.innerObserver = new InnerMutationObserver({loop: this.loop, bus, matcher});
   }
 
   observe(target) {
