@@ -1,8 +1,11 @@
 module.exports = () => {
+  const {join} = require('path');
+
   const HardSourcePlugin = require('hard-source-webpack-plugin');
   const HtmlPlugin = require('html-webpack-plugin');
 
   return {
+    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     module: {
       rules: [
         {
@@ -17,6 +20,14 @@ module.exports = () => {
               modules: false,
             }], 'preact'],
           },
+        },
+        {
+          test: /\.md$/,
+          loader: 'raw-loader',
+        },
+        {
+          test: /\.css$/,
+          loader: 'style-loader!css-loader'
         },
       ],
     },

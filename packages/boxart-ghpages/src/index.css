@@ -1,0 +1,9 @@
+html, body {
+  width: 100%;
+}
+
+body {
+  width: 80%;
+  max-width: 60rem;
+  margin: auto;
+}
