@@ -3,6 +3,7 @@ module.exports = () => {
 
   const HardSourcePlugin = require('hard-source-webpack-plugin');
   const HtmlPlugin = require('html-webpack-plugin');
+  const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
   return {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -27,7 +28,16 @@ module.exports = () => {
         },
         {
           test: /\.css$/,
-          loader: 'style-loader!css-loader'
+          use: [
+            {
+              loader: process.env.NODE_ENV === 'production' ?
+                MiniCssExtractPlugin.loader :
+                'style-loader',
+            },
+            {
+              loader: 'css-loader'
+            }
+          ],
         },
       ],
     },
@@ -36,6 +46,9 @@ module.exports = () => {
       new HtmlPlugin({
         template: 'src/index.html.js',
       }),
-    ],
+      process.env.NODE_ENV === 'production' ?
+        new MiniCssExtractPlugin() :
+        null,
+    ].filter(Boolean),
   };
 };
