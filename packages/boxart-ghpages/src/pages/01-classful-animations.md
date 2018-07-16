@@ -1,0 +1,5 @@
+## Classful Animations
+
+BoxArt animations respond to changes in an animated element's location in the DOM, not spatial position, or its class list. Animating elements are identified by up to 3 names in their class list. The three names are the animation `type`, the element's `id`, and the current `animation`. The `type` determines what `animation`s are available to a given element. At minimum an element can animate with only the `type` in its class list. The `id` defaults to the `type`. Other `id`s are the `type` with any suffix. `animation` defaults to `default`.
+
+An animation is run with three state objects, a beginning state, an end state, and a modifiable state. An animation works by updating these states from the DOM or javascript values, animating the modifiable state between the begin and end states, and presenting the modifiable state on the element and its children. The animating element's `id` indicates what set of states with that element. This lets elements move in the DOM's hierarchy or for a new element to reuse an old element's state.

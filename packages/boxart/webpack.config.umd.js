@@ -11,7 +11,15 @@ const config = c => Object.assign({
   externals: {
     preact: true,
     'preact/src/vnode': true,
+    react: {
+      commonjs: 'react',
+      commonjs2: 'react',
+      root: 'React',
+      var: 'React',
+    },
+    'react-dom': true,
     './function.babel.compile': {
+      root: 'BoxArt.compile',
       var: 'BoxArt.compile',
     },
   },
@@ -92,6 +100,14 @@ module.exports = [
     },
     output: {
       library: ['BoxArt', 'Preact'],
+    },
+  }),
+  config({
+    entry: {
+      'boxart-react-dom-no0': './src/level3/react-dom-no0',
+    },
+    output: {
+      library: ['BoxArt', 'React'],
     },
   }),
 ];

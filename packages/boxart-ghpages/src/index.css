@@ -1,9 +1,21 @@
 html, body {
   width: 100%;
+  font-family: arial;
 }
 
 body {
   width: 80%;
   max-width: 60rem;
   margin: auto;
+}
+
+p, pre, h1, h2, h3, h4, h5, h6 {
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.full {
+  width: 100%;
+  max-width: 60rem;
 }
