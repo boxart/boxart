@@ -1,6 +1,6 @@
 {
   "name": "boxart-element",
-  "version": "0.2.0-alpha.10",
+  "version": "1.0.0",
   "description": "",
   "main": "main",
   "module": "module",
@@ -11,6 +11,6 @@
   },
   "license": "ISC",
   "dependencies": {
-    "boxart": "^0.2.0-alpha.10"
+    "boxart": "^1.0.0"
   }
 }

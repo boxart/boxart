@@ -1,6 +1,6 @@
 {
   "name": "boxart-factory",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "",
   "main": "src/index.js",
   "scripts": {
@@ -12,6 +12,6 @@
   },
   "license": "ISC",
   "dependencies": {
-    "boxart-functions": "^0.2.0-alpha.10"
+    "boxart-functions": "^1.0.0"
   }
 }
