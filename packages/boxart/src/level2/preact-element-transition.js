@@ -26,6 +26,13 @@ class PreactElementTransition extends BaseTransition {
     if (this.alive[id]) {
       this.alive[id](true);
     }
+    if (animation !== '' || animation !== 'default') {
+      const branch = this.tree.element(id);
+      if (branch) {
+        const meta = branch.meta(id);
+        meta.didEnter = true;
+      }
+    }
   }
 
   onStateEnd(type, id, animation) {
